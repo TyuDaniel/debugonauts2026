@@ -7,16 +7,18 @@ export const FOV_NPX: Record<string, number> = { '4': 39, '6.5': 64, '13': 128, 
 export const FOV_HINT: Record<string, string> = { '4': '8 s', '6.5': '12 s', '13': '16 s', '26': '40 s' };
 export const SPHEREX_SCALE = 6.15; // arcsec per pixel
 export const MJYSR_TO_UJY = 889; // per SPHEREx pixel (docs/SERVICES.md)
-export const WL_MIN = 0.75;
-export const WL_MAX = 5.0;
+// SPHEREx's filters reach a little past the nominal 0.75–5.0 µm at the detector edges (0.742–5.003 µm seen).
+export const WL_MIN = 0.7;
+export const WL_MAX = 5.05;
 
 export const DETECTORS: { n: number; lo: number; hi: number }[] = [
-  { n: 1, lo: 0.75, hi: 1.09 },
-  { n: 2, lo: 1.1, hi: 1.62 },
-  { n: 3, lo: 1.63, hi: 2.41 },
-  { n: 4, lo: 2.42, hi: 3.82 },
-  { n: 5, lo: 3.83, hi: 4.41 },
-  { n: 6, lo: 4.42, hi: 5.0 },
+  // Measured edges of each detector's wavelengths; neighbours overlap slightly, so the ranges do too.
+  { n: 1, lo: 0.7, hi: 1.11 },
+  { n: 2, lo: 1.08, hi: 1.67 },
+  { n: 3, lo: 1.62, hi: 2.42 },
+  { n: 4, lo: 2.42, hi: 3.81 },
+  { n: 5, lo: 3.8, hi: 4.44 },
+  { n: 6, lo: 4.41, hi: 5.05 },
 ];
 
 /** Spectral features from docs/SERVICES.md section 7. */

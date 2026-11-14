@@ -1,7 +1,7 @@
 // SkyDive viewer — wavelength bar: two handles over an exposure histogram, detector chips,
 // molecule presets, live count, matched-wavelengths toggle. Written with AI coding assistance (Claude Code).
 import { $, clear, fmt, h, rafThrottle } from './dom';
-import { store, groupPatch } from './store';
+import { store, groupPatch, type ViewState } from './store';
 import { DETECTORS, FEATURES, WL_MAX, WL_MIN } from './types';
 
 const STEP = 0.01;
@@ -10,9 +10,20 @@ const snap = (um: number) => Math.round(um / STEP) * STEP;
 
 let track: HTMLElement, hist: HTMLCanvasElement, sel: HTMLElement, lo: HTMLElement, hi: HTMLElement;
 
+/** A molecule preset stacks every visit; leaving it for a wider range goes back to single visits. */
+function leavePreset(): Partial<ViewState> {
+  const [a, b] = store.state.wl;
+  const onPreset = FEATURES.some((f) => Math.abs(a - f.lo) < 0.006 && Math.abs(b - f.hi) < 0.006);
+  return onPreset ? { groups: {}, show: ['A', null], a: [], b: [], mode: 'blink', playing: false } : {};
+}
+
+export function setRange(lo: number, hi: number): void {
+  store.set({ ...leavePreset(), wl: [lo, hi] });
+}
+
 export function setDetector(n: number): void {
   const d = DETECTORS[n - 1];
-  if (d) store.set({ wl: [d.lo, d.hi] });
+  if (d) setRange(d.lo, d.hi);
 }
 
 export function stackAllSpherex(): void {
@@ -37,7 +48,7 @@ export function initWavebar(): void {
       }, `D${d.n}`),
     );
   }
-  dets.append(h('button', { type: 'button', class: 'chip', 'data-det': 'all', 'aria-pressed': 'false', title: 'All 102 colours, 0.75–5.0 µm', onclick: () => store.set({ wl: [WL_MIN, WL_MAX] }) }, 'All'));
+  dets.append(h('button', { type: 'button', class: 'chip', 'data-det': 'all', 'aria-pressed': 'false', title: 'All 102 colours, 0.75–5.0 µm', onclick: () => setRange(WL_MIN, WL_MAX) }, 'All'));
 
   const mols = $('#mol-chips');
   for (const f of FEATURES.filter((f) => !f.contaminant)) {
