@@ -74,22 +74,53 @@ export function initWavebar(): void {
     return which;
   };
   let dragging: 'lo' | 'hi' | null = null;
-  const start = (which: 'lo' | 'hi' | 'near') => (e: PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  /** A finger that has touched the bar but not yet shown whether it is dragging a handle or scrolling the page. */
+  let pending: { which: 'lo' | 'hi' | 'near'; x: number; y: number; id: number } | null = null;
+  const begin = (which: 'lo' | 'hi' | 'near', e: PointerEvent) => {
     dragging = setFromPointer(which, e.clientX) as 'lo' | 'hi';
-    (dragging === 'lo' ? lo : hi).focus();
-    track.setPointerCapture(e.pointerId);
+    (dragging === 'lo' ? lo : hi).focus({ preventScroll: true });
+    try {
+      track.setPointerCapture(e.pointerId);
+    } catch {
+      /* the pointer is already gone */
+    }
+  };
+  const start = (which: 'lo' | 'hi' | 'near') => (e: PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.stopPropagation();
+    if (e.pointerType === 'mouse') {
+      e.preventDefault();
+      begin(which, e);
+      return;
+    }
+    // Touch: the range changes on a tap or a sideways drag, never while the page is being scrolled.
+    pending = { which, x: e.clientX, y: e.clientY, id: e.pointerId };
   };
   lo.addEventListener('pointerdown', start('lo'));
   hi.addEventListener('pointerdown', start('hi'));
   track.addEventListener('pointerdown', start('near'));
   track.addEventListener('pointermove', (e) => {
+    if (pending && e.pointerId === pending.id) {
+      const dx = Math.abs(e.clientX - pending.x),
+        dy = Math.abs(e.clientY - pending.y);
+      if (dx > 6 && dx > dy) {
+        const which = pending.which;
+        pending = null;
+        begin(which, e);
+      }
+      return;
+    }
     if (dragging) setFromPointer(dragging, e.clientX);
   });
-  const end = () => (dragging = null);
-  track.addEventListener('pointerup', end);
-  track.addEventListener('pointercancel', end);
+  track.addEventListener('pointerup', (e) => {
+    if (pending && e.pointerId === pending.id) setFromPointer(pending.which, pending.x);
+    pending = null;
+    dragging = null;
+  });
+  track.addEventListener('pointercancel', () => {
+    pending = null;
+    dragging = null;
+  });
 
   const keys = (which: 'lo' | 'hi') => (e: KeyboardEvent) => {
     const d = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : 0;

@@ -2,7 +2,7 @@
 // exposure table, NEOSSat. Written with AI coding assistance (Claude Code).
 import { frameById, selectedExposures } from './compute';
 import { mjdIso } from './coords';
-import { $, clear, fmt, h, rafThrottle, toast } from './dom';
+import { $, clear, fmt, h, noHover, rafThrottle, toast } from './dom';
 import { loadMore } from './loader';
 import { glyph, layerCounts, MARK } from './paint';
 import { DEFAULTS, store } from './store';
@@ -175,7 +175,8 @@ const renderFrame = rafThrottle((): void => {
     row('Pixel scale', `${pic.pixscale.toFixed(2)}″ per pixel`);
   }
   const c = s.cursor;
-  row('Under cursor', c ? flagText(c) : 'Hover the image to list quality flags', 'flagline', 'Quality flags set by the SPHEREx pipeline on the pixel under the cursor');
+  const touch = noHover();
+  row(touch ? 'Tapped pixel' : 'Under cursor', c ? flagText(c) : `${touch ? 'Tap' : 'Hover'} the image to list quality flags`, 'flagline', `Quality flags set by the SPHEREx pipeline on the pixel ${touch ? 'that was tapped' : 'under the cursor'}`);
 });
 
 // ---------- NEOSSat ----------

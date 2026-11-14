@@ -18,7 +18,10 @@ import { StarField } from './stars';
 
 // Embedded on the viewer's landing page: chrome is trimmed by CSS and a dive navigates the parent page.
 const EMBED = new URLSearchParams(window.location.search).has('embed');
-if (EMBED) document.body.classList.add('embed');
+if (EMBED) {
+  document.body.classList.add('embed');
+  document.documentElement.classList.add('embed');
+}
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -109,6 +112,29 @@ async function start(): Promise<void> {
   controls.autoRotateSpeed = 0.32;
   controls.autoRotate = !reducedMotion.matches;
 
+  // Embedded in a page that scrolls (the landing page on a phone), one finger belongs to the
+  // page, so that the map never traps the scroll; two fingers zoom and turn the map.
+  const parentScrolls = (): boolean => {
+    if (!EMBED) return false;
+    try {
+      return window.parent.matchMedia('(max-width: 899px)').matches;
+    } catch {
+      return false;
+    }
+  };
+  let cooperative = false;
+  function syncTouchMode(): void {
+    cooperative = parentScrolls();
+    // Any value other than a known gesture makes OrbitControls ignore a single finger.
+    controls.touches.ONE = cooperative ? (-1 as THREE.TOUCH) : THREE.TOUCH.PAN;
+    canvas.style.touchAction = cooperative ? 'pan-y' : 'none';
+  }
+  syncTouchMode();
+  // Two fingers always belong to the map, never to the page's own scroll or zoom.
+  canvas.addEventListener('touchmove', (ev) => {
+    if (ev.cancelable && ev.touches.length > 1) ev.preventDefault();
+  }, { passive: false });
+
   function resize(): void {
     width = window.innerWidth;
     height = window.innerHeight;
@@ -124,6 +150,7 @@ async function start(): Promise<void> {
     document.documentElement.style.setProperty('--bottom-h', `${$('bottom').offsetHeight}px`);
     labels?.measure();
     obstaclesDirty = true;
+    syncTouchMode();
   }
 
   // Labels keep clear of the interface panels.
@@ -537,25 +564,55 @@ async function start(): Promise<void> {
   // ---- pointer: click to pick, hover to preview -------------------------------------------------
   let downX = 0, downY = 0, downT = 0, dragging = false;
   let pointerX = -1, pointerY = -1, pointerMoved = false;
+  const touching = new Set<number>();
+  let multiTouch = false;
+  const coopHint = $('coop-hint');
+  let coopTimer = 0;
   canvas.addEventListener('pointerdown', (ev) => {
+    if (ev.pointerType === 'touch') {
+      touching.add(ev.pointerId);
+      multiTouch = touching.size > 1;
+    } else multiTouch = false;
     downX = ev.clientX; downY = ev.clientY; downT = performance.now();
     dragging = true;
+    // In a scrolling page a single finger is on its way past: the slow turn carries on.
+    if (cooperative && ev.pointerType === 'touch' && !multiTouch) return;
+    coopHint.classList.remove('on');
     stopAutoRotate();
     tween = null;
     hideHover();
   });
   canvas.addEventListener('pointerup', (ev) => {
-    dragging = false;
-    if (diving) return;
+    touching.delete(ev.pointerId);
+    dragging = touching.size > 0;
+    if (diving || multiTouch) return;
     if (Math.hypot(ev.clientX - downX, ev.clientY - downY) > 6 || performance.now() - downT > 500) return;
-    const radius = ev.pointerType === 'touch' || coarsePointer.matches ? 24 : 13;
-    const i = stars.pick(camera, ev.clientX, ev.clientY, width, height, radius);
-    if (i >= 0) select({ kind: 'star', i }, false);
+    const touch = ev.pointerType === 'touch' || coarsePointer.matches;
+    // Labels let touches through to the map (see style.css), so a tap on a name is matched here:
+    // squarely on the text first, then a star under the finger, then a name it only just missed.
+    const onLabel = labels?.pick(ev.clientX, ev.clientY, 2);
+    if (onLabel?.onSelect) { onLabel.onSelect(); return; }
+    const i = stars.pick(camera, ev.clientX, ev.clientY, width, height, touch ? 24 : 13);
+    if (i >= 0) { select({ kind: 'star', i }, false); return; }
+    const nearLabel = touch ? labels?.pick(ev.clientX, ev.clientY, 12) : null;
+    if (nearLabel?.onSelect) nearLabel.onSelect();
     else if (selection) select(null, false);
   });
-  canvas.addEventListener('pointercancel', () => { dragging = false; });
+  canvas.addEventListener('pointercancel', (ev) => {
+    touching.delete(ev.pointerId);
+    dragging = touching.size > 0;
+  });
   canvas.addEventListener('pointermove', (ev) => {
-    if (ev.pointerType !== 'mouse') return;
+    if (ev.pointerType !== 'mouse') {
+      // One finger dragged sideways across the embedded map does nothing: say what does.
+      // (Dragged up or down it scrolls the page, and the browser takes the gesture away.)
+      if (cooperative && touching.size === 1 && !multiTouch && Math.abs(ev.clientX - downX) > 28) {
+        coopHint.classList.add('on');
+        window.clearTimeout(coopTimer);
+        coopTimer = window.setTimeout(() => coopHint.classList.remove('on'), 1800);
+      }
+      return;
+    }
     pointerX = ev.clientX; pointerY = ev.clientY; pointerMoved = true;
   });
   canvas.addEventListener('pointerleave', () => { pointerX = -1; hideHover(); });
@@ -712,9 +769,18 @@ async function start(): Promise<void> {
   let last = performance.now();
   let frames = 0;
 
+  // Scrolled out of view (the map sits below the fold on a phone's landing page) there is
+  // nothing to draw: 330,000 stars a frame for nobody is heat and battery.
+  let onScreen = true;
+  new IntersectionObserver((es) => { onScreen = es[es.length - 1].isIntersecting; }).observe(canvas);
+
   function frame(now: number): void {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
+    if (!onScreen && frames > 0 && !diving) {
+      requestAnimationFrame(frame);
+      return;
+    }
 
     if (playing) {
       const next = tYears + PLAY_SPEED * dt;

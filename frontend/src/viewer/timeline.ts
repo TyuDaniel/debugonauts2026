@@ -125,10 +125,87 @@ function toggleInGroup(g: string, id: string): void {
   store.set(groupPatch(groups, show));
 }
 
-function onFrameClick(e: MouseEvent, id: string): void {
+function onFrameClick(id: string): void {
   if (clickAction === 'add') return toggleInGroup(pickGroup, id);
   store.set({ frame: id, mode: 'blink', playing: false });
-  void e;
+}
+
+// ---------- picking and scrubbing frames with a pointer ----------
+
+/** Clicks that follow a press already handled below are ignored; keyboard clicks still count. */
+let suppressClickUntil = 0;
+
+/**
+ * Frames sit a few pixels apart on a phone, far closer than a fingertip. A press anywhere on a
+ * track picks the frame nearest to it, and dragging along the track scrubs through the frames.
+ * A finger that moves up or down instead is scrolling the page and changes nothing.
+ */
+function initScrub(): void {
+  let active: { id: number; kind: string; touch: boolean; x: number; y: number; scrubbing: boolean } | null = null;
+
+  const nearest = (kind: string, clientX: number, reach: number): string | null => {
+    let best: string | null = null;
+    let bd = reach;
+    for (const b of root.querySelectorAll<HTMLElement>(`.tl-track[data-kind="${kind}"] .tl-f`)) {
+      const r = b.getBoundingClientRect();
+      // Distance to the block (zero inside it), with overlapping blocks settled by their centres.
+      const edge = clientX < r.left ? r.left - clientX : clientX > r.right ? clientX - r.right : 0;
+      const d = edge + Math.abs(clientX - (r.left + r.width / 2)) * 0.01;
+      if (d < bd) {
+        bd = d;
+        best = b.dataset.id ?? null;
+      }
+    }
+    return best;
+  };
+  const capture = (id: number) => {
+    try {
+      root.setPointerCapture(id);
+    } catch {
+      /* the pointer is already gone */
+    }
+  };
+
+  root.addEventListener('pointerdown', (e) => {
+    const track = (e.target as Element).closest<HTMLElement>('.tl-track[data-kind]');
+    if (!track || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const touch = e.pointerType !== 'mouse';
+    active = { id: e.pointerId, kind: track.dataset.kind!, touch, x: e.clientX, y: e.clientY, scrubbing: false };
+    if (touch) return;
+    const id = nearest(active.kind, e.clientX, 12);
+    if (!id) {
+      active = null;
+      return;
+    }
+    suppressClickUntil = performance.now() + 600;
+    onFrameClick(id);
+    // Dragging on scrubs through the frames; in Add mode a press only toggles the one frame.
+    active.scrubbing = clickAction === 'view';
+    if (active.scrubbing) capture(e.pointerId);
+  });
+  root.addEventListener('pointermove', (e) => {
+    if (!active || e.pointerId !== active.id) return;
+    if (!active.scrubbing) {
+      const dx = Math.abs(e.clientX - active.x),
+        dy = Math.abs(e.clientY - active.y);
+      if (!active.touch || clickAction !== 'view' || dx < 8 || dx < dy) return;
+      active.scrubbing = true;
+      capture(e.pointerId);
+    }
+    const id = nearest(active.kind, e.clientX, Infinity);
+    if (id && (id !== store.state.frame || store.state.mode !== 'blink')) store.set({ frame: id, mode: 'blink', playing: false });
+  });
+  root.addEventListener('pointerup', (e) => {
+    if (!active || e.pointerId !== active.id) return;
+    const a = active;
+    active = null;
+    suppressClickUntil = performance.now() + 600;
+    if (!a.touch || a.scrubbing) return;
+    // A tap: generous reach, because the finger hides what it is aiming at.
+    const id = nearest(a.kind, a.x, 28);
+    if (id) onFrameClick(id);
+  });
+  root.addEventListener('pointercancel', () => (active = null));
 }
 
 /** Enter compare mode; with no groups yet, start with every SPHEREx visit in group A. */
@@ -169,6 +246,7 @@ let root: HTMLElement;
 
 export function initTimeline(): void {
   root = $('#timeline');
+  initScrub();
 
   $('#play').addEventListener('click', togglePlay);
   $('#step-back').addEventListener('click', () => {
@@ -299,7 +377,7 @@ function renderTrays(): void {
     };
     const g1 = subtracting ? st.show[0] : pickGroup;
     const g2 = subtracting ? (st.show[1] as string) : partnersOf(pickGroup)[0] ?? '';
-    const pair = h('span', { class: 'pair', hidden: null, style: subtracting ? '' : 'visibility:hidden', 'aria-hidden': subtracting ? null : 'true' },
+    const pair = h('span', { class: `pair${subtracting ? '' : ' unused'}`, 'aria-hidden': subtracting ? null : 'true' },
       menu(g1, filled.length ? filled : [pickGroup], 'Group to show', (v) => setShow([v, partnersOf(v).includes(g2) ? g2 : partnersOf(v)[0] ?? null])),
       h('span', { class: 'minus', 'aria-hidden': 'true' }, '−'),
       menu(g2, partnersOf(g1).length ? partnersOf(g1) : [g2 || '–'], 'Group to subtract', (v) => setShow([g1, v])),
@@ -307,8 +385,7 @@ function renderTrays(): void {
     show.append(pair);
   }
   show.append(h('button', {
-    type: 'button', class: 'btn small ghost', title: 'Remove every group',
-    style: filled.length ? '' : 'visibility:hidden',
+    type: 'button', class: `btn small ghost${filled.length ? '' : ' unused'}`, title: 'Remove every group',
     onclick: () => {
       pickGroup = 'A';
       store.set(groupPatch({}, ['A', null]));
@@ -326,6 +403,8 @@ const TRACKS: { kind: Frame['kind']; label: string; color: string; tip: string }
 const render = rafThrottle((): void => {
   const s = store.session;
   const st = store.state;
+  // Rebuilding the tracks would drop keyboard focus from the frame that was just chosen.
+  const focused = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('#timeline .tl-f')?.dataset.id;
   clear(root);
   const end = axisEnd();
   const breakX = SPLIT + GAP / 2;
@@ -337,7 +416,7 @@ const render = rafThrottle((): void => {
     root.append(
       h('div', { class: 'tl-label', title: tr.tip }, h('i', { style: `background:${tr.color};${tr.kind === 'wise' ? 'border-radius:50%' : tr.kind === 'ps1' ? 'transform:rotate(45deg) scale(.85)' : 'border-radius:2px'}` }), tr.label, frames.length ? h('span', { class: 'n' }, String(frames.length)) : null),
     );
-    const track = h('div', { class: 'tl-track', role: 'group', 'aria-label': `${tr.label} frames` });
+    const track = h('div', { class: 'tl-track', role: 'group', 'data-kind': tr.kind, 'aria-label': `${tr.label} frames` });
     track.append(h('span', { class: 'tl-break', style: `left:${breakX * 100}%` }));
     if (!frames.length) track.append(quietNote(tr.kind));
     for (const f of frames) {
@@ -350,10 +429,13 @@ const render = rafThrottle((): void => {
         type: 'button',
         class: `tl-f ${f.kind}${empty ? ' empty' : ''}`,
         style: f.kind === 'spherex' ? `left:${x0 * 100}%;width:max(${spxMin}px, calc(${(x1 - x0) * 100}% - 2px))` : `left:${x0 * 100}%`,
+        'data-id': f.id,
         'aria-current': current ? 'true' : null,
         'aria-label': `${f.label}${grp ? `, in group ${grp}` : ''}`,
         title: `${f.label} · ${f.kind === 'spherex' ? `${mjdIso(f.mjd0)} to ${mjdIso(f.mjd1)}` : mjdIso(f.mjd)}${empty && s.status === 'ok' ? ' · no exposures in this wavelength range' : ''}`,
-        onclick: (e: MouseEvent) => onFrameClick(e, f.id),
+        onclick: () => {
+          if (performance.now() >= suppressClickUntil) onFrameClick(f.id);
+        },
       }, h('i'), grp ? h('span', { class: `tag ${grp === st.show[1] ? 'b' : 'a'}` }, grp) : null);
       track.append(b);
     }
@@ -373,6 +455,7 @@ const render = rafThrottle((): void => {
     axis.append(h('span', { class: `tl-tick${whole ? '' : ' minor'}`, style: `left:${xOf(yearToMjd(y)) * 100}%` }, whole ? String(Math.round(y)) : 'Jul'));
   }
   root.append(axis);
+  if (focused) root.querySelector<HTMLElement>(`.tl-f[data-id="${CSS.escape(focused)}"]`)?.focus({ preventScroll: true });
 });
 
 

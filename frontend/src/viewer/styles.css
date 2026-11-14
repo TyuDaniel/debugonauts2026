@@ -42,6 +42,22 @@ body {
   height: 100%;
   margin: 0;
 }
+html {
+  /* Text keeps its size when a phone is turned on its side. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+/* A quick second tap on a control is a second press, not a request to zoom the page. */
+a,
+button,
+input,
+select,
+summary,
+label,
+[role='slider'] {
+  touch-action: manipulation;
+}
 body {
   background: var(--bg);
   color: var(--ink);
@@ -129,9 +145,11 @@ select {
   cursor: pointer;
   transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
 }
-.btn:hover {
-  background: var(--hover);
-  border-color: #465039;
+@media (hover: hover) {
+  .btn:hover {
+    background: var(--hover);
+    border-color: #465039;
+  }
 }
 .btn:active {
   background: var(--raised);
@@ -142,8 +160,10 @@ select {
   color: var(--accent-ink);
   font-weight: 600;
 }
-.btn.primary:hover {
-  background: #dcff6b;
+@media (hover: hover) {
+  .btn.primary:hover {
+    background: #dcff6b;
+  }
 }
 .btn.small {
   height: 26px;
@@ -171,8 +191,18 @@ select {
   color: var(--ink);
   cursor: pointer;
 }
-.icon-btn:hover {
-  background: var(--hover);
+@media (hover: hover) {
+  .icon-btn:hover {
+    background: var(--hover);
+  }
+}
+.icon-btn:active,
+.chip:active,
+.gchip:active,
+.seg button:active,
+.pop-item:active,
+.zoom-btn:active {
+  background: var(--raised);
 }
 .icon-btn.play {
   width: 36px;
@@ -209,9 +239,11 @@ select {
 .seg button:first-child {
   border-left: 0;
 }
-.seg button:hover {
-  background: var(--hover);
-  color: var(--ink);
+@media (hover: hover) {
+  .seg button:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
 }
 .seg button[aria-checked='true'] {
   background: var(--accent-dim);
@@ -347,8 +379,10 @@ select option:disabled {
   flex: none;
   transition: transform 0.35s var(--ease);
 }
-.brand:hover .brand-mark {
-  transform: rotate(-14deg) scale(1.08);
+@media (hover: hover) {
+  .brand:hover .brand-mark {
+    transform: rotate(-14deg) scale(1.08);
+  }
 }
 .brand-name {
   font-family: var(--display);
@@ -434,9 +468,11 @@ select option:disabled {
   border-bottom: 1px solid var(--line-strong);
   padding-bottom: 1px;
 }
-.link:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+@media (hover: hover) {
+  .link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
 }
 .menu {
   position: relative;
@@ -469,8 +505,10 @@ select option:disabled {
   font-weight: 400;
   color: var(--ink-3);
 }
-.pop-item:hover {
-  background: var(--hover);
+@media (hover: hover) {
+  .pop-item:hover {
+    background: var(--hover);
+  }
 }
 
 /* ---------- landing: one screen, poster on the left, the live 3D map on the right ---------- */
@@ -568,14 +606,18 @@ select option:disabled {
   cursor: pointer;
   transition: background 0.15s var(--ease);
 }
-.hero-form button:hover {
-  background: #fff;
+@media (hover: hover) {
+  .hero-form button:hover {
+    background: #fff;
+  }
 }
 .hero-form button svg {
   transition: transform 0.25s var(--ease);
 }
-.hero-form button:hover svg {
-  transform: translateY(3px);
+@media (hover: hover) {
+  .hero-form button:hover svg {
+    transform: translateY(3px);
+  }
 }
 .hero-note {
   margin-top: 10px;
@@ -614,9 +656,11 @@ select option:disabled {
   transition: rotate 0.5s var(--ease), scale 0.5s var(--ease);
   animation: stick 0.7s var(--ease) 0.2s backwards;
 }
-.patch:hover {
-  rotate: -4deg;
-  scale: 1.06;
+@media (hover: hover) {
+  .patch:hover {
+    rotate: -4deg;
+    scale: 1.06;
+  }
 }
 .patch svg {
   display: block;
@@ -657,6 +701,10 @@ select option:disabled {
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
 .tile-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
   font-family: var(--display);
   font-size: 17.5px;
   font-weight: 700;
@@ -664,7 +712,6 @@ select option:disabled {
   letter-spacing: -0.01em;
 }
 .tile-name small {
-  margin-left: 8px;
   font-family: var(--mono);
   font-stretch: 100%;
   font-size: 11px;
@@ -693,15 +740,25 @@ select option:disabled {
   border-radius: 50%;
   transition: transform 0.3s var(--ease);
 }
-.tile:hover,
 .tile:focus-visible {
   background: var(--accent-ink);
   color: var(--accent);
   outline: none;
 }
-.tile:hover .tile-go,
+@media (hover: hover) {
+  .tile:hover {
+    background: var(--accent-ink);
+    color: var(--accent);
+    outline: none;
+  }
+}
 .tile:focus-visible .tile-go {
   transform: translateX(4px) rotate(-45deg);
+}
+@media (hover: hover) {
+  .tile:hover .tile-go {
+    transform: translateX(4px) rotate(-45deg);
+  }
 }
 .tile.skeleton {
   display: block;
@@ -787,9 +844,11 @@ select option:disabled {
   text-decoration: none;
   transition: border-color 0.15s, color 0.15s;
 }
-.map-full:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+@media (hover: hover) {
+  .map-full:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 }
 
 @keyframes shimmer {
@@ -976,7 +1035,102 @@ select option:disabled {
 }
 #ovl {
   cursor: crosshair;
-  touch-action: manipulation;
+  /* Showing the whole field, a finger scrolls the page; view.ts switches this to none once zoomed in. */
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.image-box.panning #ovl {
+  cursor: grabbing;
+}
+.zoom {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: grid;
+  gap: 4px;
+}
+.zoom-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(15, 18, 13, 0.9);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.zoom-btn[disabled] {
+  color: var(--ink-3);
+  cursor: default;
+}
+.zoom-btn[disabled] svg {
+  opacity: 0.5;
+}
+.zoom-level {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+@media (hover: hover) {
+  .zoom-btn:not([disabled]):hover {
+    background: var(--hover);
+  }
+}
+.spec-jump {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 3;
+  translate: -50% 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  animation: rise 0.25s var(--ease) backwards;
+}
+/* A small live copy of the image, pinned to the corner while the image itself is scrolled away. */
+.pip {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 25;
+  width: 116px;
+  height: 116px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #050604;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  animation: pip-in 0.2s var(--ease) backwards;
+}
+.pip canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@keyframes pip-in {
+  from {
+    opacity: 0;
+    scale: 0.9;
+  }
 }
 #ovl:focus-visible {
   outline-offset: -3px;
@@ -1097,7 +1251,8 @@ select option:disabled {
   flex: 1 1 auto;
   height: 40px;
   min-width: 0;
-  touch-action: none;
+  /* A sideways drag moves a handle; an up or down swipe still scrolls the page. */
+  touch-action: pan-y;
   cursor: pointer;
 }
 .wave-track canvas {
@@ -1121,7 +1276,7 @@ select option:disabled {
   width: 20px;
   margin-left: -10px;
   cursor: ew-resize;
-  touch-action: none;
+  touch-action: pan-y;
 }
 .wave-handle::after {
   content: '';
@@ -1164,9 +1319,11 @@ select option:disabled {
   font-size: 11px;
   margin-left: 4px;
 }
-.chip:hover {
-  background: var(--hover);
-  color: var(--ink);
+@media (hover: hover) {
+  .chip:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
 }
 .chip[aria-pressed='true'] {
   border-color: var(--accent);
@@ -1289,6 +1446,9 @@ select option:disabled {
   grid-template-columns: 108px minmax(0, 1fr);
   row-gap: 0;
   user-select: none;
+  -webkit-user-select: none;
+  /* Dragging along a track scrubs through frames; an up or down swipe still scrolls the page. */
+  touch-action: pan-y;
 }
 .tl-label {
   display: flex;
@@ -1374,9 +1534,11 @@ select option:disabled {
   background: var(--spx);
   opacity: 0.55;
 }
-.tl-f:hover i {
-  filter: brightness(1.3);
-  opacity: 1;
+@media (hover: hover) {
+  .tl-f:hover i {
+    filter: brightness(1.3);
+    opacity: 1;
+  }
 }
 .tl-f.empty i {
   opacity: 0.2;
@@ -1496,8 +1658,10 @@ kbd {
 .panel[open] > summary::after {
   transform: rotate(45deg) translate(-2px, -2px);
 }
-.panel > summary:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .panel > summary:hover {
+    color: var(--ink);
+  }
 }
 .panel > summary:focus-visible {
   outline-offset: -2px;
@@ -1548,8 +1712,10 @@ kbd {
   cursor: pointer;
   color: var(--ink-2);
 }
-.ov-item:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .ov-item:hover {
+    color: var(--ink);
+  }
 }
 .ov-item .n {
   font-size: 12px;
@@ -1725,8 +1891,10 @@ table.exp tr.failed td {
 table.exp a {
   color: var(--ink-2);
 }
-table.exp a:hover {
-  color: var(--accent);
+@media (hover: hover) {
+  table.exp a:hover {
+    color: var(--accent);
+  }
 }
 .finder {
   position: relative;
@@ -1783,10 +1951,13 @@ table.exp a:hover {
 }
 .toast {
   position: fixed;
-  left: 50%;
-  bottom: 24px;
+  left: 16px;
+  right: 16px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
   z-index: var(--z-toast);
-  transform: translate(-50%, 8px);
+  width: fit-content;
+  margin: 0 auto;
+  transform: translateY(8px);
   padding: 8px 14px;
   background: var(--accent);
   color: var(--accent-ink);
@@ -1797,11 +1968,21 @@ table.exp a:hover {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
-  max-width: calc(100vw - 32px);
+  max-width: min(calc(100% - 32px), 460px);
 }
 .toast.show {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: none;
+}
+/* An explanation shown on tap, where there is no hover for a tooltip. */
+.toast.hint {
+  padding: 10px 14px;
+  background: var(--raised);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  font-weight: 450;
+  line-height: 1.45;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 /* ---------- embed: image and timeline only ---------- */
@@ -1829,8 +2010,10 @@ table.exp a:hover {
   text-decoration: none;
   border-bottom: 1px solid var(--line-strong);
 }
-.embed-link:hover {
-  color: var(--accent);
+@media (hover: hover) {
+  .embed-link:hover {
+    color: var(--accent);
+  }
 }
 .app[data-embed='1'] .image-wrap {
   padding-bottom: 8px;
@@ -2027,6 +2210,10 @@ table.exp a:hover {
   align-items: center;
   gap: 6px;
 }
+/* Controls that do not apply right now keep their place, so the row does not jump as they come and go. */
+.trays .unused {
+  visibility: hidden;
+}
 .trays .minus {
   color: var(--ink);
   font-weight: 600;
@@ -2045,9 +2232,11 @@ table.exp a:hover {
   font-size: 12px;
   cursor: pointer;
 }
-.gchip:hover {
-  background: var(--hover);
-  color: var(--ink);
+@media (hover: hover) {
+  .gchip:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
 }
 .gchip.picking {
   border-color: var(--accent);
@@ -2119,4 +2308,363 @@ table.exp a:hover {
 #finder.finder-big {
   aspect-ratio: auto;
   overflow: hidden;
+}
+
+/* ==========================================================================
+   Phones and tablets. These come last so they win over the rules above.
+   ========================================================================== */
+
+/* ---------- stacked layouts (anything narrower than the desktop grid) ---------- */
+@media (max-width: 1179px) {
+  /* No reserved line under the chips: the page scrolls, so a note may push content down. */
+  .wave-foot {
+    min-height: 0;
+    margin-top: 0;
+  }
+  /* No tooltip on touch, so the note is shown in full rather than cut short. */
+  .wave-note {
+    margin-top: 6px;
+    white-space: normal;
+  }
+}
+
+/* ---------- landing on a narrow screen ---------- */
+@media (max-width: 899px) {
+  .tile {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  /* Two lines of description instead of one cut off mid-sentence. */
+  .tile-blurb {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+  }
+  .mapwrap {
+    height: 68dvh;
+  }
+}
+
+/* ---------- phones ---------- */
+@media (max-width: 719px) {
+  /* The landing header has room for the name: the coordinate box lives in the poster there. */
+  .app[data-view='landing'] .brand-name {
+    display: inline;
+  }
+  .app[data-view='landing'] .brand-team {
+    display: inline-block;
+  }
+  .app[data-view='landing'] .top-nav {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+  .fov {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .stage-status:empty {
+    display: none;
+  }
+  .transport-row {
+    gap: 8px 12px;
+  }
+  .speed {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .speed input {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: 160px;
+  }
+  .presets {
+    flex: 1 1 100%;
+  }
+  .presets .btn {
+    flex: 1 1 auto;
+  }
+  /* Detectors fill one row; the molecule presets start the next. */
+  .sep {
+    display: none;
+  }
+  #det-chips {
+    flex: 1 1 100%;
+  }
+  #det-chips .chip {
+    flex: 1 1 0;
+    padding: 0 2px;
+  }
+  .plot {
+    height: 220px;
+  }
+  .plot.plot-big,
+  #finder.finder-big {
+    width: calc(100vw - 16px);
+    height: min(72dvh, 560px);
+  }
+  .finder {
+    height: 260px;
+  }
+  .pop {
+    width: min(264px, calc(100vw - 24px));
+  }
+}
+
+@media (max-width: 719px) {
+  /* On a phone the row wraps, and a held place would be an empty line: let it close up instead. */
+  .trays .unused {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  /* The widest option ("26 arcmin (slowest)") sets the menu's width; here that pushes Share onto a third line. */
+  .fov select {
+    width: 138px;
+    text-overflow: ellipsis;
+  }
+}
+/* A phone on its side has little height to spare: one header row, not two. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .app[data-view='viewer'] .top {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .app[data-view='viewer'] .brand-name,
+  .app[data-view='viewer'] .brand-team,
+  .app[data-view='viewer'] .fov .micro,
+  .app[data-view='viewer'] .coord-note:empty {
+    display: none;
+  }
+  .app[data-view='viewer'] .coord {
+    flex: 1 1 200px;
+  }
+  /* A lookup message, when there is one, takes a line of its own under the row. */
+  .app[data-view='viewer'] .coord-note {
+    order: 5;
+    flex: 1 1 100%;
+  }
+}
+
+/* ---------- on its side: the image stays put on the left, the controls scroll on the right ---------- */
+@media (min-width: 640px) and (max-width: 1179px) and (orientation: landscape) {
+  .app:not([data-embed='1']) .viewer {
+    grid-template-columns: min(56%, calc(100dvh - 68px)) minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      'stage transport'
+      'stage wave'
+      'stage left'
+      'stage right';
+    align-items: start;
+  }
+  .app:not([data-embed='1']) .stage {
+    position: sticky;
+    top: 0;
+  }
+  .app:not([data-embed='1']) .image-wrap {
+    padding: 0 12px;
+  }
+  .app:not([data-embed='1']) .image-box {
+    width: min(100cqw, calc(100dvh - 92px));
+    height: min(100cqw, calc(100dvh - 92px));
+  }
+  .stage-head,
+  .readout {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .stage-head {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .readout {
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    white-space: normal;
+  }
+  .ro {
+    flex: 0 1 auto;
+  }
+  .ro.grow {
+    flex-basis: 100%;
+  }
+  #ro-ra,
+  #ro-dec,
+  #ro-val,
+  #ro-wave {
+    width: auto;
+  }
+  .app:not([data-embed='1']) .transport {
+    border-top: 0;
+  }
+  .app:not([data-embed='1']) .transport,
+  .app:not([data-embed='1']) .wavebar,
+  .app:not([data-embed='1']) .rail {
+    border-left: 1px solid var(--line);
+    border-right: 0;
+  }
+  .trays {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+  .wave-label {
+    display: none;
+  }
+  .wave-side {
+    width: auto;
+  }
+}
+
+/* ---------- fingers: larger targets, and nothing that makes iOS zoom the page ---------- */
+@media (pointer: coarse) {
+  /* iOS zooms the whole page when a field whose text is under 16px takes focus. */
+  input[type='text'],
+  input[type='search'],
+  select,
+  .trays .show select {
+    font-size: 16px;
+  }
+  .btn,
+  select,
+  .coord input {
+    height: 40px;
+  }
+  .btn.small,
+  .seg button,
+  .chip,
+  .gchip,
+  .trays .show select {
+    height: 36px;
+  }
+  .btn.small {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .chip,
+  .seg button {
+    padding: 0 11px;
+    font-size: 13px;
+  }
+  .gchip {
+    padding-right: 12px;
+    font-size: 13px;
+  }
+  .gchip.add {
+    padding: 0 12px;
+  }
+  .gchip-letter {
+    min-width: 26px;
+    height: 26px;
+  }
+  .icon-btn {
+    width: 44px;
+    height: 40px;
+  }
+  .icon-btn.play {
+    width: 54px;
+  }
+  .zoom-btn,
+  .plot-close {
+    width: 40px;
+    height: 40px;
+    font-size: 12.5px;
+  }
+  .pop-item {
+    padding: 12px;
+  }
+  .panel > summary {
+    height: 46px;
+  }
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 4px;
+    border-bottom: 0;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 4px;
+  }
+  input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+  input[type='checkbox']:checked::after {
+    width: 10px;
+    height: 5px;
+  }
+  .check {
+    min-height: 36px;
+    gap: 8px;
+  }
+  .ov-item {
+    grid-template-columns: 20px 16px minmax(0, 1fr) auto;
+    gap: 10px;
+    height: 40px;
+  }
+  .slider {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+  input[type='range'] {
+    height: 34px;
+  }
+  input[type='range']::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-top: -10px;
+  }
+  input[type='range']::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
+  .speed input {
+    width: 116px;
+  }
+  /* Timeline rows tall enough to land a finger on; timeline.ts picks the frame nearest the touch. */
+  .tl-label,
+  .tl-track:not(.axis) {
+    height: 32px;
+  }
+  .tl-f {
+    top: 2px;
+    height: 28px;
+  }
+  .tl-track .tl-quiet {
+    top: 8px;
+  }
+  .tl-track .tl-quiet.skel {
+    top: 12px;
+  }
+  .wave-track {
+    height: 48px;
+  }
+  .wave-handle {
+    width: 36px;
+    margin-left: -18px;
+  }
+  .wave-handle::after {
+    left: 16px;
+  }
+  .tl-tick {
+    font-size: 11px;
+  }
+  .neo-strip span {
+    font-size: 11px;
+  }
+  /* Thumbnails large enough to tap. */
+  .neo-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (pointer: coarse) and (max-width: 719px) {
+  #det-chips .chip {
+    padding: 0 2px;
+  }
+  .pip {
+    width: 104px;
+    height: 104px;
+  }
 }

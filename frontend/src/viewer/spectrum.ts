@@ -4,7 +4,7 @@ import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { APERTURE_FRACTION, bandOf, runPhot } from './compute';
 import { fmtDeg, mjdMonth, mjdToDate } from './coords';
-import { $, clear, fmt, h, rafThrottle } from './dom';
+import { $, clear, fmt, h, noHover, rafThrottle } from './dom';
 import { store } from './store';
 import { FEATURES, WL_MAX, WL_MIN, type PhotPoint } from './types';
 
@@ -95,7 +95,7 @@ function initEnlarge(): void {
   };
   for (const [id, has] of [['#spec-plot', () => !!spec], ['#lc-plot', () => !!lc]] as const) {
     const el = $(id);
-    el.title = 'Click to enlarge';
+    el.title = noHover() ? 'Tap to enlarge' : 'Click to enlarge';
     el.addEventListener('click', () => enlarge(el, has));
   }
   backdrop.addEventListener('click', shut);
@@ -124,8 +124,10 @@ function placeholder(text: string): void {
 
 const axis = (label: string): uPlot.Axis => ({
   stroke: INK3,
-  font: '12.5px Geist, system-ui, sans-serif',
-  labelFont: '600 12.5px Geist, system-ui, sans-serif',
+  // Whole pixels only: uPlot scales the first "<digits>px" it finds by the device pixel ratio, so
+  // "12.5px" became "12.15px" of canvas, which is 4px of screen on a phone.
+  font: '12px Geist, system-ui, sans-serif',
+  labelFont: '600 12px Geist, system-ui, sans-serif',
   label,
   labelSize: 19,
   labelGap: 2,
@@ -139,7 +141,8 @@ const render = rafThrottle((): void => {
   const s = store.session;
   const st = store.state;
   if (!st.src) {
-    placeholder(s.status === 'loading' ? 'Click a source once frames appear to measure its spectrum.' : 'Click a source in the image to measure its brightness in every exposure: a spectrum in under a second.');
+    const tap = noHover() ? 'Tap' : 'Click';
+    placeholder(s.status === 'loading' ? `${tap} a source once frames appear to measure its spectrum.` : `${tap} a source in the image to measure its brightness in every exposure: a spectrum in under a second.`);
     return;
   }
   if (!s.phot) {

@@ -57,12 +57,20 @@ Any field other than the five prepared ones needs the backend, which finds the S
 
 ### Step 2: understand the screen
 
-- **Centre**: the sky image. North is up and east is left, as on an astronomical chart. Hover over a pixel to see its value and quality flags in **This frame**; click a source to measure it (step 6).
+- **Centre**: the sky image. North is up and east is left, as on an astronomical chart. Hover over a pixel to see its value and quality flags in **This frame**; click a source to measure it (step 6). To zoom in, scroll over the image, press **+** and **−** (or the buttons in its corner), or double-click a spot; drag to move around while zoomed, and press **0** for the whole field again. The scale bar follows the zoom.
 - **Below the image**: the playback controls, the groups, the timeline and the wavelength bar.
 - **Left column**: **About this field** (prepared fields only: what the field shows and anything to watch for), **Display** and **Overlays**.
 - **Right column**: **Spectrum**, **This frame**, **Finder map** and **NEOSSat** (only where NEOSSat imaged the spot).
 
 Every panel can be folded away by clicking its title. On a phone, most panels start folded so the image and timeline come first.
+
+#### On a phone or tablet
+
+- **Zoom**: pinch the image, or double-tap a spot. Zoomed in, one finger moves the image; showing the whole field, one finger scrolls the page as usual. The number under the zoom buttons goes back to the whole field.
+- **Pixel and spectrum**: tap a pixel to see its value and flags under the image, and to measure the source there. A **Spectrum** button appears on the image and jumps down to the result.
+- **Frames**: tap anywhere on a timeline row to show the nearest frame, or slide a finger along the row to scrub through them.
+- **Explanations**: labels with a dotted underline show their note when tapped.
+- **Keeping the image in view**: scrolled down to the display sliders or overlay toggles, a small live copy of the image stays in the corner; tap it to go back up. With the phone on its side, the image stays pinned on the left while the controls scroll beside it.
 
 ### Step 3: play, step and pick frames
 
@@ -173,6 +181,7 @@ Every setting is stored in the page address: position, field of view, wavelength
 Open it from the mission patch on the landing page or by going to `/explore`. It shows 331,802 stars and brown dwarfs within 100 parsecs, with the Sun at the centre and rings at 10, 25, 50 and 100 pc.
 
 - Drag to orbit, scroll or pinch to zoom, and double-click to centre on the selected star. W A S D or the arrow keys fly; Q and E move down and up. The target button resets the view.
+- On a touch screen, one finger slides the map and two fingers pinch to zoom and turn it. In the small map on the landing page of a phone, one finger scrolls the page instead, so the map never traps the scroll; two fingers still move the map.
 - **Star colour** colours stars by temperature, from hot and blue to cool and red. **Motion** colours them by how far they move across our sky in a decade; bright stars are the fast movers, the best places to look for motion in the viewer.
 - Brown dwarfs are drawn as rings. Dashed markers point towards prepared targets that lie beyond the map.
 - The time slider at the bottom moves every star along its real motion up to 50,000 years into the past or the future. Press play to animate it, or drag the slider back to the middle to return to today.

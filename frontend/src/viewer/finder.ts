@@ -1,6 +1,6 @@
 // SkyDive viewer — Aladin Lite 3.8.2 finder map with the SPHEREx all-sky cube layer. Loaded lazily
 // from the CDN; fails soft. Written with AI coding assistance (Claude Code).
-import { $, clear, h } from './dom';
+import { $, clear, h, noHover } from './dom';
 import { fieldArcsec } from './paint';
 import { store } from './store';
 
@@ -210,7 +210,7 @@ function sync(centre = true): void {
     const note = $('#finder-note');
     clear(note);
     note.append(
-      `SPHEREx all-sky map near ${um.toFixed(2)} µm. The square is the viewer's field. Scroll to zoom, drag to pan. `,
+      `SPHEREx all-sky map near ${um.toFixed(2)} µm. The square is the viewer's field. ${noHover() ? 'Pinch' : 'Scroll'} to zoom, drag to pan. `,
       h('button', { type: 'button', class: 'btn small ghost', onclick: recentre }, 'Re-centre'),
       ' ',
       h('button', { type: 'button', class: 'btn small ghost', onclick: enlarge }, 'Enlarge'),

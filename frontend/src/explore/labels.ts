@@ -23,6 +23,9 @@ interface Item {
   el: HTMLElement;
   w: number;
   h: number;
+  /** Top-left corner on screen, while shown. */
+  x: number;
+  y: number;
   shown: boolean;
 }
 
@@ -48,7 +51,7 @@ export class LabelLayer {
       });
     }
     this.root.appendChild(el);
-    this.items.push({ spec, el, w: 0, h: 0, shown: false });
+    this.items.push({ spec, el, w: 0, h: 0, x: 0, y: 0, shown: false });
   }
 
   /** Screen rectangles (UI panels) that labels must not be drawn over. */
@@ -98,7 +101,24 @@ export class LabelLayer {
         it.shown = show;
         it.el.classList.toggle('on', show);
       }
-      if (show) it.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+      if (show) {
+        it.x = x;
+        it.y = y;
+        it.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+      }
     }
+  }
+
+  /**
+   * The selectable label at a screen point, allowing `pad` px around its text. On touch screens
+   * the labels let touches through to the map, so that a pinch or drag that happens to start on a
+   * name still moves the map, and a tap is matched to its label here instead.
+   */
+  pick(px: number, py: number, pad: number): LabelSpec | null {
+    for (const it of this.items) {
+      if (!it.shown || !it.spec.onSelect) continue;
+      if (px >= it.x - pad && px <= it.x + it.w + pad && py >= it.y - pad && py <= it.y + it.h + pad) return it.spec;
+    }
+    return null;
   }
 }

@@ -46,7 +46,7 @@
         </a>
         <form class="coord" id="coord-form" role="search" autocomplete="off">
           <label class="sr-only" for="coord-input">Sky coordinates or object name</label>
-          <input id="coord-input" type="text" spellcheck="false" autocapitalize="off" placeholder="133.7577 −7.2420, 08h55m01.9s −07d14m31s, or a name" aria-describedby="coord-note" />
+          <input id="coord-input" type="text" inputmode="text" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="133.7577 −7.2420, 08h55m01.9s −07d14m31s, or a name" aria-describedby="coord-note" />
           <button type="submit" class="btn primary" id="coord-go">Go</button>
         </form>
         <p class="coord-note" id="coord-note" role="status" aria-live="polite"></p>
@@ -89,7 +89,7 @@
           <p class="hero-lede">Enter coordinates or a name to watch that patch of sky change since 2010.</p>
           <form class="hero-form" id="hero-form" autocomplete="off">
             <label class="sr-only" for="hero-input">Sky coordinates or object name</label>
-            <input id="hero-input" type="text" spellcheck="false" autocapitalize="off" placeholder="133.7577 −7.2420, or a name" />
+            <input id="hero-input" type="text" inputmode="text" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="133.7577 −7.2420, or a name" />
             <button type="submit">Dive in <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
           </form>
           <p class="hero-note" id="hero-note" role="status" aria-live="polite"></p>
@@ -100,7 +100,7 @@
           </footer>
         </section>
         <section class="mapwrap" aria-label="3D map of the Sun's neighbourhood">
-          <iframe src="/explore?embed=1" title="3D map of every known star within 100 parsecs of the Sun. Click a star to open it in the viewer."></iframe>
+          <iframe src="/explore?embed=1" loading="lazy" title="3D map of every known star within 100 parsecs of the Sun. Click a star to open it in the viewer."></iframe>
           <a class="map-full" href="/explore">Full screen <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
         </section>
       </main>
@@ -114,10 +114,16 @@
           <div class="image-wrap" id="image-wrap">
             <div class="image-box" id="image-box">
               <canvas id="img" aria-label="Sky image. North is up, east is left."></canvas>
-              <canvas id="ovl" tabindex="0" role="img" aria-label="Catalogue markers. Click a source to measure its spectrum."></canvas>
+              <canvas id="ovl" tabindex="0" role="img" aria-label="Catalogue markers. Click or tap a source to measure its spectrum. Pinch, scroll or press plus and minus to zoom."></canvas>
               <div class="image-msg" id="image-msg" hidden></div>
               <div class="progress" id="progress" hidden><div class="progress-bar" id="progress-bar"></div></div>
               <div class="tip" id="marker-tip" hidden></div>
+              <div class="zoom" id="zoom" role="group" aria-label="Zoom">
+                <button type="button" class="zoom-btn" id="zoom-in" aria-label="Zoom in" title="Zoom in (+)"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg></button>
+                <button type="button" class="zoom-btn" id="zoom-out" aria-label="Zoom out" title="Zoom out (−)" disabled><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg></button>
+                <button type="button" class="zoom-btn zoom-level num" id="zoom-reset" title="Show the whole field (0)" hidden>1×</button>
+              </div>
+              <button type="button" class="spec-jump" id="spec-jump" hidden>Spectrum <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
             </div>
           </div>
           <div class="readout" id="readout" aria-live="off">
@@ -125,7 +131,7 @@
             <span class="ro"><i class="micro">Dec</i><b id="ro-dec">–</b></span>
             <span class="ro"><i class="micro">Value</i><b id="ro-val">–</b></span>
             <span class="ro"><i class="micro" title="Wavelength of the light in this frame, in micrometres">λ</i><b id="ro-wave">–</b></span>
-            <span class="ro grow"><i class="micro" title="Quality flags the SPHEREx pipeline set on this pixel, and in how many of the exposures behind this frame">Flags</i><b id="ro-flags">hover the image</b></span>
+            <span class="ro grow"><i class="micro" title="Quality flags the SPHEREx pipeline set on this pixel, and in how many of the exposures behind this frame">Flags</i><b id="ro-flags">–</b></span>
           </div>
         </section>
 
@@ -236,6 +242,7 @@
           </details>
         </aside>
       </main>
+      <button type="button" class="pip" id="pip" hidden aria-label="Back to the image" title="Back to the image"><canvas id="pip-canvas" width="264" height="264" aria-hidden="true"></canvas></button>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
   </body>

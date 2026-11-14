@@ -48,8 +48,13 @@ html, body {
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  /* A pinch anywhere on this page, on a panel as much as on the sky, must never zoom the page:
+     the interface is pinned to the screen and would be left half off it. */
+  touch-action: pan-x pan-y;
 }
+a, button, input, summary { touch-action: manipulation; }
 
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -98,9 +103,10 @@ button { cursor: pointer; }
 }
 .label.on { opacity: 1; visibility: visible; transition: opacity 0.25s linear; }
 button.label { pointer-events: auto; cursor: pointer; }
-button.label:hover { color: #fff; }
+@media (hover: hover) { button.label:hover { color: #fff; } }
 .label-showcase, .label-beyond { color: var(--accent); font-weight: 500; }
-.label-showcase:hover, .label-beyond:hover { color: #dcff6b; }
+@media (hover: hover) { .label-showcase:hover,
+  .label-beyond:hover { color: #dcff6b; } }
 .label-sun { color: #ffe2a8; font-weight: 500; }
 .label-ring { font-size: 10.5px; color: rgba(190, 198, 210, 0.72); letter-spacing: 0.04em; }
 .label-region { font-size: 11px; font-style: italic; color: rgba(200, 207, 218, 0.78); letter-spacing: 0.06em; }
@@ -116,6 +122,26 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
 }
 .ring-sel { width: 26px; height: 26px; margin: -13px 0 0 -13px; border: 1.25px solid var(--accent); box-shadow: 0 0 10px rgba(200, 245, 58, 0.35); }
 .ring-hover { width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 1px solid rgba(255, 255, 255, 0.6); }
+/* Shown over the embedded map when one finger is dragged across it. */
+#coop-hint {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: var(--z-ui);
+  translate: -50% -50%;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  background: var(--panel-solid);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s linear;
+}
+#coop-hint.on { opacity: 1; }
 #tip {
   position: fixed;
   left: 0;
@@ -145,6 +171,11 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   pointer-events: none;
 }
 #top > * { pointer-events: auto; }
+/* On its side, a phone's notch and rounded corners eat into the left and right edges. */
+#top, #bottom {
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
 .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .wordmark {
   display: inline-flex;
@@ -159,8 +190,8 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   text-decoration: none;
 }
 .wordmark svg { width: 30px; height: 30px; flex: none; transition: transform 0.35s var(--ease); }
-.wordmark:hover svg { transform: rotate(-14deg) scale(1.08); }
-.wordmark:hover { color: var(--accent); }
+@media (hover: hover) { .wordmark:hover svg { transform: rotate(-14deg) scale(1.08); } }
+@media (hover: hover) { .wordmark:hover { color: var(--accent); } }
 .team-tag {
   padding: 3px 6px 2px;
   border-radius: 3px;
@@ -246,7 +277,8 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
 }
 .result-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .result-sub { flex: none; color: var(--ink-3); font-size: 11.5px; }
-.result:hover, .result.active { background: rgba(200, 245, 58, 0.11); }
+.result.active { background: rgba(200, 245, 58, 0.11); }
+@media (hover: hover) { .result:hover { background: rgba(200, 245, 58, 0.11); } }
 .result.active .result-name { color: var(--accent); }
 
 .icon-btn {
@@ -262,7 +294,7 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   color: var(--ink-2);
   transition: color 0.15s, border-color 0.15s, background-color 0.15s;
 }
-.icon-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+@media (hover: hover) { .icon-btn:hover { color: var(--ink); border-color: var(--line-strong); } }
 .icon-btn.active { color: var(--accent); border-color: rgba(200, 245, 58, 0.5); }
 
 .viewer-link {
@@ -280,7 +312,7 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   white-space: nowrap;
   transition: background-color 0.15s, border-color 0.15s;
 }
-.viewer-link:hover { background: rgba(200, 245, 58, 0.12); border-color: var(--accent); }
+@media (hover: hover) { .viewer-link:hover { background: rgba(200, 245, 58, 0.12); border-color: var(--accent); } }
 
 .text-btn {
   padding: 6px 8px;
@@ -291,7 +323,7 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   white-space: nowrap;
   transition: color 0.15s;
 }
-.text-btn:hover:not(:disabled) { color: var(--accent); }
+@media (hover: hover) { .text-btn:hover:not(:disabled) { color: var(--accent); } }
 .text-btn:disabled { color: var(--ink-3); opacity: 0.55; cursor: default; }
 
 /* ---- bottom: mode + legend, time, honesty ---- */
@@ -328,7 +360,7 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   white-space: nowrap;
   transition: background-color 0.18s, color 0.18s;
 }
-.seg button:hover { color: var(--ink); }
+@media (hover: hover) { .seg button:hover { color: var(--ink); } }
 .seg button[aria-pressed='true'] { background: rgba(200, 245, 58, 0.15); color: var(--accent); }
 
 #legend {
@@ -418,7 +450,8 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   transition: box-shadow 0.15s;
 }
 #t::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; border: 0; background: var(--accent); }
-#t:hover::-webkit-slider-thumb, #t:active::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(200, 245, 58, 0.22); }
+#t:active::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(200, 245, 58, 0.22); }
+@media (hover: hover) { #t:hover::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(200, 245, 58, 0.22); } }
 .slider-ticks { font-family: var(--mono); display: flex; justify-content: space-between; margin-top: 1px; font-size: 10.5px; color: var(--ink-3); }
 #t-out { font-family: var(--mono); min-width: 84px; text-align: right; font-size: 13px; color: var(--ink); white-space: nowrap; }
 
@@ -434,7 +467,9 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   z-index: var(--z-card);
   width: 320px;
   max-height: calc(100vh - 72px - 96px);
+  max-height: calc(100dvh - 72px - 96px);
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 16px 16px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -456,7 +491,17 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
 .row dd small { display: block; margin-top: 1px; color: var(--ink-2); font-size: 11.5px; white-space: pre-wrap; }
 .row-time dd { color: var(--accent); }
 .card-note { margin: 10px 0 0; padding: 9px 10px; border-radius: var(--radius); background: rgba(200, 245, 58, 0.08); color: var(--ink-2); font-size: 12px; line-height: 1.5; }
-.card-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.card-actions {
+  /* Pinned to the foot of the card: where the facts do not all fit, they scroll and Dive stays in reach. */
+  position: sticky;
+  bottom: -12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px -16px -12px;
+  padding: 10px 16px 12px;
+  background: var(--panel-solid);
+}
 .btn-primary {
   flex: 1;
   height: 38px;
@@ -469,7 +514,7 @@ body.diving #labels { opacity: 0; transition: opacity 0.6s linear; }
   font-size: 13.5px;
   transition: filter 0.15s, transform 0.15s var(--ease);
 }
-.btn-primary:hover { filter: brightness(1.08); }
+@media (hover: hover) { .btn-primary:hover { filter: brightness(1.08); } }
 .btn-primary:active { transform: scale(0.985); }
 .card-hint { margin: 8px 0 0; color: var(--ink-3); font-size: 11.5px; }
 
@@ -523,6 +568,7 @@ body.diving #top, body.diving #bottom, body.diving #card, body.diving .ring-hove
   #time { width: 100%; grid-template-columns: auto minmax(0, 1fr) auto; row-gap: 2px; padding: 8px 10px 6px; }
   #t-out { min-width: 76px; }
   .slider-ticks span:nth-child(2) { visibility: hidden; }
+  .slider-ticks span { white-space: nowrap; }
   #honesty { margin-top: 0; font-size: 10.5px; line-height: 1.4; text-align: left; }
   #bottom { background: linear-gradient(to top, rgba(5, 6, 4, 0.96) 0, rgba(5, 6, 4, 0.96) calc(100% - 28px), rgba(5, 6, 4, 0)); padding-top: 28px; }
   .hint { display: none; }
@@ -533,9 +579,11 @@ body.diving #top, body.diving #bottom, body.diving #card, body.diving .ring-hove
     right: var(--gutter);
     bottom: calc(var(--bottom-h) + 6px);
     width: auto;
-    max-height: min(52vh, calc(100vh - var(--bottom-h) - 70px));
+    max-height: min(48vh, calc(100vh - var(--bottom-h) - 70px));
+    max-height: min(48dvh, calc(100dvh - var(--bottom-h) - 70px));
     padding: 14px 14px 10px;
   }
+  .card-actions { bottom: -10px; margin: 12px -14px -10px; padding: 10px 14px; }
   .row { grid-template-columns: 96px 1fr; padding: 6px 0; }
   .label { font-size: 11px; }
 }
@@ -551,6 +599,59 @@ body.embed #bottom { display: block; padding: 0 140px 14px 16px; }
 body.embed #time { margin: 0; width: min(100%, 640px); }
 body.embed #card { top: 58px; right: 16px; max-height: calc(100vh - 58px - 84px); }
 body.embed .loading-bug { width: 64px; height: 64px; }
+/* Inside the landing page a swipe that the map does not use must carry on to the page around it. */
+html.embed, html.embed body { overscroll-behavior: auto; }
 @media (max-width: 720px) {
   body.embed #bottom { padding: 28px 12px 56px; }
+}
+
+/* ---- fingers: larger targets; touches on a star's name go through to the map ---- */
+@media (pointer: coarse) {
+  /* A pinch or drag that starts on a label still reaches the map; main.ts matches taps to labels. */
+  button.label { pointer-events: none; }
+  .icon-btn { width: 40px; height: 40px; }
+  .search, .viewer-link { height: 40px; }
+  .search input { font-size: 16px; } /* under 16px, iOS zooms the page on focus */
+  .seg button { height: 36px; }
+  #legend summary { padding: 11px 12px; }
+  .result { padding: 11px 10px; }
+  .card-close { width: 36px; height: 36px; }
+  .btn-primary { height: 44px; font-size: 14.5px; }
+  .text-btn { padding: 12px 10px; }
+  #t { height: 34px; }
+  #t::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -10px; }
+  #t::-moz-range-thumb { width: 22px; height: 22px; }
+  .slider-wrap { padding-top: 0; }
+}
+
+@media (max-width: 360px) {
+  .slider-ticks { font-size: 9.5px; }
+  #time { gap: 8px; }
+}
+
+/* ---- little room below the map: closed, the legend is a button beside the colour switch ---- */
+@media (max-width: 720px), (max-height: 480px) and (orientation: landscape) {
+  @supports selector(:has(a)) {
+    #panel:has(#legend:not([open])) { flex-direction: row; align-items: stretch; }
+    #panel:has(#legend:not([open])) .seg { flex: 1 1 auto; }
+    #panel:has(#legend:not([open])) #legend { align-self: stretch; }
+    #panel:has(#legend:not([open])) #legend summary { height: 100%; gap: 10px; padding-top: 0; padding-bottom: 0; }
+  }
+}
+
+/* ---- a phone on its side: little height, so the bottom bar is one row and the card sits right ---- */
+@media (max-height: 480px) and (orientation: landscape) {
+  #top { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
+  #bottom { display: grid; grid-template-columns: 300px minmax(0, 1fr); align-items: end; gap: 10px; padding-top: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); background: none; }
+  #honesty { display: none; }
+  #legend[open] { max-height: calc(100dvh - 130px); overflow: auto; }
+  #time { width: 100%; padding: 4px 10px; }
+  #card {
+    top: 56px;
+    bottom: auto;
+    left: auto;
+    right: max(var(--gutter), env(safe-area-inset-right));
+    width: min(320px, 46vw);
+    max-height: calc(100dvh - 56px - var(--bottom-h) - 8px);
+  }
 }

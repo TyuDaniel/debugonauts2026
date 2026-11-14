@@ -35,15 +35,35 @@ export function clear(el: Element): void {
   while (el.firstChild) el.removeChild(el.firstChild);
 }
 
+/** True on phones and tablets, where there is no pointer to hover with. */
+export const noHover = (): boolean => window.matchMedia('(hover: none)').matches;
+
 let toastTimer = 0;
-/** Brief status message, announced to screen readers. */
-export function toast(msg: string): void {
+/** Brief status message, announced to screen readers. `hint` is the quieter, longer-lived kind. */
+export function toast(msg: string, hint = false): void {
   const el = document.getElementById('toast');
   if (!el) return;
   el.textContent = msg;
+  el.classList.toggle('hint', hint);
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => el.classList.remove('show'), 2600);
+  // A sentence of explanation needs longer on screen than a two-word status.
+  toastTimer = window.setTimeout(() => el.classList.remove('show'), hint ? Math.min(9000, 2600 + msg.length * 45) : 2600);
+}
+
+/**
+ * Explanations live in `title` attributes, which a finger cannot hover. Without a hovering
+ * pointer, tapping a label that carries one shows it as a note at the foot of the screen.
+ */
+export function initTouchHints(): void {
+  if (!noHover()) return;
+  const el = document.getElementById('toast');
+  document.addEventListener('pointerdown', () => el?.classList.contains('hint') && el.classList.remove('show'), true);
+  document.addEventListener('click', (e) => {
+    const t = (e.target as Element | null)?.closest?.('.micro, .badge, dt, .plot-head span, .tl-label');
+    const text = t?.closest('[title]')?.getAttribute('title');
+    if (text) toast(text, true);
+  });
 }
 
 export function rafThrottle<T extends unknown[]>(fn: (...a: T) => void): (...a: T) => void {

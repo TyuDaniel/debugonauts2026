@@ -4,7 +4,7 @@ import './styles.css';
 import { ApiError, apiJson } from './api';
 import { checkSaturation, measureApcor, requestRestack } from './compute';
 import { fmtDeg, parseCoords } from './coords';
-import { $, toast } from './dom';
+import { $, initTouchHints, toast } from './dom';
 import { initFinder } from './finder';
 import { initLanding, showLanding } from './landing';
 import { ensureSso, loadField } from './loader';
@@ -13,7 +13,7 @@ import { initShare } from './share';
 import { initSpectrum } from './spectrum';
 import { deserialize, store } from './store';
 import { initTimeline, step, togglePlay } from './timeline';
-import { getPicture, getPlaced, initView } from './view';
+import { getPicture, getPlaced, getZoom, initView, zoomStep } from './view';
 import { initWavebar, setDetector } from './wavebar';
 
 const app = $('#app');
@@ -98,10 +98,13 @@ function boot(): void {
   initSpectrum();
   initShare();
   initFinder();
+  initTouchHints();
 
   // Phone: keep the page short; the image and timeline come first.
   if (window.matchMedia('(max-width: 719px)').matches) {
     for (const id of ['p-display', 'p-notices', 'p-frame', 'p-finder', 'p-neossat']) $<HTMLDetailsElement>('#' + id).open = false;
+    // The full example does not fit and would be cut off mid-number.
+    input.placeholder = 'Coordinates or a name';
   }
 
   $('#coord-form').addEventListener('submit', (e) => {
@@ -157,7 +160,9 @@ function boot(): void {
     } else if (/^[1-6]$/.test(e.key)) {
       setDetector(+e.key);
       toast(`Detector ${e.key}`);
-    }
+    } else if (e.key === '+' || e.key === '=') zoomStep(1);
+    else if (e.key === '-' || e.key === '_') zoomStep(-1);
+    else if (e.key === '0') zoomStep(0);
   });
 
   route();
@@ -168,6 +173,6 @@ function boot(): void {
 }
 
 // Dev-only handle for automated browser tests and console debugging.
-if (import.meta.env.DEV) (window as any).__skydive = { store, getPicture, getPlaced };
+if (import.meta.env.DEV) (window as any).__skydive = { store, getPicture, getPlaced, getZoom };
 
 boot();

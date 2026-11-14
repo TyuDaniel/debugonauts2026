@@ -28,13 +28,25 @@ export function fieldArcsec(): number {
   return store.session.nPx * SPHEREX_SCALE;
 }
 
+/**
+ * Zoom and pan of the image box. `z` is the magnification (1 shows the whole field) and
+ * (`cx`, `cy`) is the point of the field, as a fraction from its top-left, at the middle of the box.
+ */
+export interface Zoom {
+  z: number;
+  cx: number;
+  cy: number;
+}
+export const NO_ZOOM: Zoom = { z: 1, cx: 0.5, cy: 0.5 };
+
 /** Where a picture lands inside a square box of `size` px: all surveys share one sky box. */
-export function pictureRect(pic: { nPx: number; pixscale: number }, size: number): { x: number; w: number } {
-  const w = (size * pic.nPx * pic.pixscale) / fieldArcsec();
-  return { x: (size - w) / 2, w };
+export function pictureRect(pic: { nPx: number; pixscale: number }, size: number, view: Zoom = NO_ZOOM): { x: number; y: number; w: number } {
+  const w0 = (size * pic.nPx * pic.pixscale) / fieldArcsec();
+  const f0 = (size - w0) / 2 / size;
+  return { x: size * (0.5 + (f0 - view.cx) * view.z), y: size * (0.5 + (f0 - view.cy) * view.z), w: w0 * view.z };
 }
 
-export function paintImage(ctx: CanvasRenderingContext2D, size: number, pic: Picture): void {
+export function paintImage(ctx: CanvasRenderingContext2D, size: number, pic: Picture, view: Zoom = NO_ZOOM): void {
   const { stretch, invert } = store.state;
   const n = pic.nPx;
   if (scratch.width !== n || scratch.height !== n) {
@@ -63,11 +75,11 @@ export function paintImage(ctx: CanvasRenderingContext2D, size: number, pic: Pic
   ctx.fillStyle = '#050604';
   ctx.fillRect(0, 0, size, size);
   ctx.imageSmoothingEnabled = false;
-  const r = pictureRect(pic, size);
-  ctx.drawImage(scratch, r.x, r.x, r.w, r.w);
+  const r = pictureRect(pic, size, view);
+  ctx.drawImage(scratch, r.x, r.y, r.w, r.w);
 }
 
-function paintTint(ctx: CanvasRenderingContext2D, size: number, pic: Picture): void {
+function paintTint(ctx: CanvasRenderingContext2D, size: number, pic: Picture, view: Zoom): void {
   if (!pic.tint) return;
   const n = pic.nPx;
   tintCanvas.width = n;
@@ -82,8 +94,8 @@ function paintTint(ctx: CanvasRenderingContext2D, size: number, pic: Picture): v
   }
   tintCtx.putImageData(im, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  const r = pictureRect(pic, size);
-  ctx.drawImage(tintCanvas, r.x, r.x, r.w, r.w);
+  const r = pictureRect(pic, size, view);
+  ctx.drawImage(tintCanvas, r.x, r.y, r.w, r.w);
 }
 
 export interface Placed {
@@ -158,8 +170,9 @@ export function paintOverlay(
   pic: Picture | null,
   mjd: number,
   u: number,
-  opts: { chrome?: boolean } = {},
+  opts: { chrome?: boolean; view?: Zoom } = {},
 ): Placed[] {
+  const view = opts.view ?? NO_ZOOM;
   const st = store.state;
   const s = store.session;
   const on = new Set(st.ov);
@@ -169,11 +182,12 @@ export function paintOverlay(
   if (st.ra == null || st.dec == null) return placed;
   const toXY = (ra: number, dec: number) => {
     const o = skyToOffset(ra, dec, st.ra!, st.dec!);
-    return { x: (0.5 - o.east / field) * size, y: (0.5 - o.north / field) * size };
+    // Field fraction, then the zoom and pan of the box. Markers keep their size at any zoom.
+    return { x: (0.5 + (0.5 - o.east / field - view.cx) * view.z) * size, y: (0.5 + (0.5 - o.north / field - view.cy) * view.z) * size };
   };
   const inside = (p: { x: number; y: number }, m = 0) => p.x >= -m && p.y >= -m && p.x <= size + m && p.y <= size + m;
 
-  if (pic && on.has('flags') && pic.kind === 'spherex') paintTint(ctx, size, pic);
+  if (pic && on.has('flags') && pic.kind === 'spherex') paintTint(ctx, size, pic, view);
 
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
@@ -358,20 +372,21 @@ export function paintOverlay(
     }
   }
 
-  if (opts.chrome !== false) paintChrome(ctx, size, u);
+  if (opts.chrome !== false) paintChrome(ctx, size, u, view.z);
   return placed;
 }
 
 /** Compass (north up, east left) and a scale bar. */
-function paintChrome(ctx: CanvasRenderingContext2D, size: number, u: number): void {
-  const field = fieldArcsec();
+function paintChrome(ctx: CanvasRenderingContext2D, size: number, u: number, z: number): void {
+  // The sky across the box: the whole field, or the part of it that is zoomed in on.
+  const field = fieldArcsec() / z;
   const ink = 'rgba(236,238,241,0.92)';
   const halo = 'rgba(5,6,4,0.7)';
   ctx.font = `600 ${10 * u}px Geist, system-ui, sans-serif`;
   ctx.textBaseline = 'middle';
 
   // Scale bar: a round number of arcminutes or arcseconds near a fifth of the field.
-  const nice = [10, 20, 30, 60, 120, 300, 600];
+  const nice = [2, 5, 10, 20, 30, 60, 120, 300, 600];
   const bar = nice.reduce((best, v) => (Math.abs(v - field / 5) < Math.abs(best - field / 5) ? v : best), nice[0]);
   const w = (bar / field) * size;
   const x0 = 12 * u,

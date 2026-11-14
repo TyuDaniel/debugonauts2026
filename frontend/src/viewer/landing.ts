@@ -24,6 +24,10 @@ export function initLanding(): void {
     e.preventDefault();
     dive($<HTMLInputElement>('#hero-input').value);
   });
+  // The full example does not fit a phone's width and would be cut off mid-word.
+  if (window.matchMedia('(max-width: 520px)').matches) {
+    $<HTMLInputElement>('#hero-input').placeholder = window.matchMedia('(max-width: 360px)').matches ? 'RA Dec or name' : 'Coordinates or a name';
+  }
   // Lookup progress and errors are written to the header note; show them next to the hero box too.
   const src = $('#coord-note');
   const dst = $('#hero-note');
