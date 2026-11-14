@@ -1,0 +1,22 @@
+{
+  "name": "skydive",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && mkdir -p dist/explore && cp dist/explore.html dist/explore/index.html",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/three": "^0.187.0",
+    "three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "uplot": "^1.6.32",
+    "vite": "^8.3.8"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}

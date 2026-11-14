@@ -1,0 +1,52 @@
+{
+  "_comment": "SkyDive showcase targets. Positions are propagated by proper motion to epoch 2026.9 (astropy apply_space_motion from the 'ref' astrometry; parallax wobble ignored). Written with AI coding assistance (Claude Code).",
+  "epoch": 2026.9,
+  "n_px": [64],
+  "targets": [
+    {
+      "key": "barnard",
+      "name": "Barnard's Star",
+      "ra": 269.446066,
+      "dec": 4.770816,
+      "blurb": "The fastest-moving star in the sky: about 145\" of travel across 14 years of WISE, 1.7 px across the SPHEREx visits, with hundreds of NEOSSat frames from the Canadian Space Agency.",
+      "note": "Saturated in every SPHEREx band.",
+      "ref": {"ra": 269.4485025, "dec": 4.73942, "epoch": 2016.0, "pmra": -801.551, "pmdec": 10362.394, "plx": 546.9759, "rv": -110.5, "source": "Gaia DR3"}
+    },
+    {
+      "key": "epsindb",
+      "name": "Epsilon Indi B",
+      "ra": 331.098475,
+      "dec": -56.80128,
+      "blurb": "A nearby brown dwarf pair, well detected by SPHEREx; it moves under 1 px across the SPHEREx visits and leaves a clear WISE track.",
+      "note": "Epsilon Indi A, 6.7' away, throws ghosts and glare that change between visits; no Pan-STARRS coverage this far south.",
+      "ref": {"ra": 331.0764526, "dec": -56.793812, "epoch": 2016.0, "pmra": 3981.977, "pmdec": -2466.832, "plx": 270.658, "rv": -40.0, "source": "Kirkpatrick et al. 2024"}
+    },
+    {
+      "key": "wise0855",
+      "name": "WISE 0855−0714",
+      "ra": 133.757714,
+      "dec": -7.242018,
+      "blurb": "The coldest known brown dwarf: a 16-year track, detected at SNR 16 by stacking 4.1–4.75 µm, with a spectrum that rises to the red.",
+      "note": "Invisible in single frames; a faint star sits 7\" away; the challenge coordinate is its old position, so it is moved by proper motion here and needs at least a 4' field.",
+      "ref": {"ra": 133.780984, "dec": -7.243932, "epoch": 2016.67, "pmra": -8123.7, "pmdec": 673.2, "plx": 439.0, "source": "Kirkpatrick et al. 2024"}
+    },
+    {
+      "key": "rwaur",
+      "name": "RW Aurigae",
+      "ra": 76.95609,
+      "dec": 30.401122,
+      "blurb": "A young variable star: labelled with its variability type and period, with per-visit brightness.",
+      "note": "Likely saturated; brightness unreliable.",
+      "ref": {"ra": 76.95608119553, "dec": 30.4012045891, "epoch": 2016.0, "pmra": 2.641, "pmdec": -27.398, "plx": 6.4062, "source": "Gaia DR3 (RW Aur A)"}
+    },
+    {
+      "key": "rdra",
+      "name": "R Draconis",
+      "ra": 248.16722,
+      "dec": 66.755025,
+      "blurb": "A Mira variable (period 246 days) in the SPHEREx deep field: monthly coverage, the best time sampling of any target.",
+      "note": "Saturated; a deep field with about 2,500 exposures, so about 600 spread evenly over every month and wavelength are loaded.",
+      "ref": {"ra": 248.16737836729, "dec": 66.75500674547, "epoch": 2016.0, "pmra": -20.643, "pmdec": 6.149, "plx": 1.2509, "source": "Gaia DR3"}
+    }
+  ]
+}

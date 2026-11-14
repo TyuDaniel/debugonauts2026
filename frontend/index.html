@@ -1,0 +1,242 @@
+<!doctype html>
+<!-- SkyDive viewer. Written with AI coding assistance (Claude Code); see README. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0a0c09" />
+    <meta name="description" content="SkyDive by team Debugonauts: any patch of sky over sixteen years, WISE 2010–2024 then SPHEREx in 102 infrared colours. Built for NASA Space Apps 2026." />
+    <title>SkyDive</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c8f53a'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23eff2e9' stroke='%230d1104' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='7.5' fill='%2312160f'/%3E%3Cellipse cx='16' cy='17.5' rx='4' ry='4.5' fill='%23ff5a7a'/%3E%3Ccircle cx='16' cy='12.5' r='2.4' fill='%23eff2e9'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" />
+    <script type="module" src="/src/viewer/main.ts"></script>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="bugonaut" viewBox="0 0 64 64">
+        <path d="M16 62c0-7.5 6.5-12 16-12s16 4.5 16 12z" fill="var(--m-helmet)" stroke="var(--m-ink)" stroke-width="2.5" stroke-linejoin="round" />
+        <circle cx="32" cy="28" r="23" fill="var(--m-helmet)" stroke="var(--m-ink)" stroke-width="2.5" />
+        <circle cx="32" cy="28" r="17.5" fill="var(--m-glass)" stroke="var(--m-ink)" stroke-width="2" />
+        <g fill="none" stroke="var(--m-bug)" stroke-width="1.8" stroke-linecap="round">
+          <path d="M23 27l-4.5-2.5M22 32h-5M23 37l-4 3M41 27l4.5-2.5M42 32h5M41 37l4 3" />
+        </g>
+        <g fill="none" stroke="var(--m-helmet)" stroke-width="1.6" stroke-linecap="round">
+          <path d="M29.5 18.5c-.8-2.8-2.6-4.300-5-4.8M34.5 18.5c.8-2.8 2.6-4.300 5-4.8" />
+        </g>
+        <circle cx="32" cy="22.5" r="5.5" fill="var(--m-helmet)" />
+        <ellipse cx="32" cy="33" rx="9.5" ry="10.5" fill="var(--m-bug)" />
+        <path d="M32 23v20.5" stroke="var(--m-ink)" stroke-width="1.5" />
+        <g fill="var(--m-ink)">
+          <circle cx="29.8" cy="20.8" r="1" /><circle cx="34.2" cy="20.8" r="1" />
+          <circle cx="27.5" cy="30" r="1.9" /><circle cx="36.5" cy="30" r="1.9" />
+          <circle cx="28" cy="37.5" r="1.5" /><circle cx="36" cy="37.5" r="1.5" />
+        </g>
+        <path d="M14.5 21a19.5 19.5 0 0 1 8-9.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".85" />
+      </symbol>
+    </svg>
+    <div id="app" class="app" data-view="boot">
+      <header class="top" id="top">
+        <a class="brand" href="./" aria-label="SkyDive home, by team Debugonauts">
+          <svg class="brand-mark bugonaut" aria-hidden="true"><use href="#bugonaut" /></svg>
+          <span class="brand-name">SkyDive</span>
+          <span class="brand-team">by Debugonauts</span>
+        </a>
+        <form class="coord" id="coord-form" role="search" autocomplete="off">
+          <label class="sr-only" for="coord-input">Sky coordinates or object name</label>
+          <input id="coord-input" type="text" spellcheck="false" autocapitalize="off" placeholder="133.7577 −7.2420, 08h55m01.9s −07d14m31s, or a name" aria-describedby="coord-note" />
+          <button type="submit" class="btn primary" id="coord-go">Go</button>
+        </form>
+        <p class="coord-note" id="coord-note" role="status" aria-live="polite"></p>
+        <label class="fov" title="How wide a patch of sky to show, in arcminutes (1/60 of a degree). Wider fields help track fast-moving objects but take longer to load the first time.">
+          <span class="micro">Field width</span>
+          <select id="fov" aria-label="Field width">
+            <option value="4">4 arcmin</option>
+            <option value="6.5">6.5 arcmin</option>
+            <option value="13">13 arcmin (slower)</option>
+            <option value="26">26 arcmin (slowest)</option>
+          </select>
+        </label>
+        <nav class="top-nav" aria-label="Site">
+          <a class="link" href="/explore">3D map</a>
+          <div class="menu" id="share-menu">
+            <button type="button" class="btn" id="share-btn" aria-haspopup="true" aria-expanded="false" aria-controls="share-pop">Share</button>
+            <div class="pop" id="share-pop" hidden>
+              <button type="button" class="pop-item" id="copy-link">Copy link</button>
+              <button type="button" class="pop-item" id="copy-embed">Copy embed code</button>
+              <button type="button" class="pop-item" id="export-gif">Export GIF</button>
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      <main class="landing" id="landing" hidden>
+        <section class="poster">
+          <a class="patch" href="/explore" aria-label="Team Debugonauts mission patch. Opens the 3D map.">
+            <svg class="bugonaut" viewBox="0 0 240 240" aria-hidden="true">
+              <defs><path id="patch-arc" d="M120 120m-91 0a91 91 0 1 1 182 0a91 91 0 1 1-182 0" /></defs>
+              <circle cx="120" cy="120" r="118" fill="#0d1104" />
+              <circle cx="120" cy="120" r="111" fill="none" stroke="#c8f53a" stroke-width="1.5" stroke-dasharray="4 5" />
+              <g class="patch-ring"><text textLength="566" lengthAdjust="spacing"><textPath href="#patch-arc">DEBUGONAUTS ✦ NASA SPACE APPS 2026 ✦ PLANET X + SPHEREX ✦</textPath></text></g>
+              <circle cx="120" cy="120" r="72" fill="#161a13" />
+              <g fill="#c8f53a"><path d="M72 84l2 6 6 2-6 2-2 6-2-6-6-2 6-2zM172 150l1.5 4.5 4.5 1.5-4.5 1.5-1.5 4.5-1.5-4.5-4.5-1.5 4.5-1.5z" /><circle cx="168" cy="88" r="2" /><circle cx="76" cy="152" r="1.5" /></g>
+              <use href="#bugonaut" x="58" y="56" width="124" height="124" />
+            </svg>
+          </a>
+                    <h1>Any patch of sky, over sixteen years.</h1>
+          <p class="hero-lede">Enter coordinates or a name to watch that patch of sky change since 2010.</p>
+          <form class="hero-form" id="hero-form" autocomplete="off">
+            <label class="sr-only" for="hero-input">Sky coordinates or object name</label>
+            <input id="hero-input" type="text" spellcheck="false" autocapitalize="off" placeholder="133.7577 −7.2420, or a name" />
+            <button type="submit">Dive in <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+          </form>
+          <p class="hero-note" id="hero-note" role="status" aria-live="polite"></p>
+          <h2 class="fields-h" id="showcase-h">Or try one of these</h2>
+          <div class="tiles" id="tiles" aria-live="polite"></div>
+          <footer class="credits" id="team">
+            Team Debugonauts · Data: SPHEREx, WISE, Pan-STARRS, Gaia, CatWISE2020, AAVSO VSX, SkyBoT, NEOSSat
+          </footer>
+        </section>
+        <section class="mapwrap" aria-label="3D map of the Sun's neighbourhood">
+          <iframe src="/explore?embed=1" title="3D map of every known star within 100 parsecs of the Sun. Click a star to open it in the viewer."></iframe>
+          <a class="map-full" href="/explore">Full screen <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6 3h7v7M13 3 4 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+        </section>
+      </main>
+
+      <main class="viewer" id="viewer" hidden>
+        <section class="stage" aria-label="Image">
+          <div class="stage-head">
+            <div class="stage-title"><strong id="frame-title">–</strong><span id="frame-sub" class="quiet"></span></div>
+            <div class="stage-status" id="stage-status" role="status" aria-live="polite"></div>
+          </div>
+          <div class="image-wrap" id="image-wrap">
+            <div class="image-box" id="image-box">
+              <canvas id="img" aria-label="Sky image. North is up, east is left."></canvas>
+              <canvas id="ovl" tabindex="0" role="img" aria-label="Catalogue markers. Click a source to measure its spectrum."></canvas>
+              <div class="image-msg" id="image-msg" hidden></div>
+              <div class="progress" id="progress" hidden><div class="progress-bar" id="progress-bar"></div></div>
+              <div class="tip" id="marker-tip" hidden></div>
+            </div>
+          </div>
+          <div class="readout" id="readout" aria-live="off">
+            <span class="ro"><i class="micro">RA</i><b id="ro-ra">–</b></span>
+            <span class="ro"><i class="micro">Dec</i><b id="ro-dec">–</b></span>
+            <span class="ro"><i class="micro">Value</i><b id="ro-val">–</b></span>
+            <span class="ro"><i class="micro" title="Wavelength of the light in this frame, in micrometres">λ</i><b id="ro-wave">–</b></span>
+            <span class="ro grow"><i class="micro" title="Quality flags the SPHEREx pipeline set on this pixel, and in how many of the exposures behind this frame">Flags</i><b id="ro-flags">hover the image</b></span>
+          </div>
+        </section>
+
+        <footer class="transport" aria-label="Playback and timeline">
+          <div class="transport-row">
+            <div class="group">
+              <button type="button" class="icon-btn" id="step-back" aria-label="Previous frame (left arrow)" title="Previous frame (←)"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 3v10M13 3 6.5 8 13 13z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" /></svg></button>
+              <button type="button" class="icon-btn play" id="play" aria-label="Play (space)" title="Play or pause (space)" aria-pressed="false"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path id="play-icon" d="M4 2.5 13 8l-9 5.5z" fill="currentColor" /></svg></button>
+              <button type="button" class="icon-btn" id="step-fwd" aria-label="Next frame (right arrow)" title="Next frame (→)"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M12 3v10M3 3l6.5 5L3 13z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" /></svg></button>
+            </div>
+            <label class="speed" title="Frames per second. Capped at 3 by default: faster blinking can trigger photosensitive seizures.">
+              <span class="micro">Speed</span>
+              <input type="range" id="speed" min="0.5" max="3" step="0.25" value="2" aria-label="Blink speed in frames per second" />
+              <output id="speed-out" class="num">2 fps</output>
+            </label>
+            <div class="group presets">
+              <button type="button" class="btn small" id="preset-blink" title="Play every frame from 2010 to today">Blink all</button>
+              <button type="button" class="btn small" id="preset-diff" title="Newest SPHEREx visit minus the oldest, at matched wavelengths">Latest − first</button>
+              <button type="button" class="btn small" id="preset-stack" title="One deep image from every SPHEREx exposure in the wavelength range">Stack all</button>
+            </div>
+            <div class="trays" id="trays" aria-label="Trays"></div>
+          </div>
+          <div class="timeline" id="timeline" role="group" aria-label="Timeline, 2010 to today"></div>
+        </footer>
+
+        <section class="wavebar" aria-label="Wavelength selection">
+          <div class="wave-row">
+            <span class="micro wave-label" title="Which infrared colours go into the image. SPHEREx measures 102 of them between 0.75 and 5 micrometres.">Wavelength</span>
+            <div class="wave-track" id="wave-track">
+              <canvas id="wave-hist" aria-hidden="true"></canvas>
+              <div class="wave-sel" id="wave-sel"></div>
+              <div class="wave-handle" id="wave-lo" role="slider" tabindex="0" aria-label="Shortest wavelength" aria-valuemin="0.75" aria-valuemax="5"></div>
+              <div class="wave-handle" id="wave-hi" role="slider" tabindex="0" aria-label="Longest wavelength" aria-valuemin="0.75" aria-valuemax="5"></div>
+            </div>
+            <div class="wave-side">
+              <output class="wave-out num" id="wave-out">0.75–5.00 µm</output>
+              <output class="count num" id="wave-count" aria-live="polite">–</output>
+            </div>
+          </div>
+          <div class="wave-row wrap">
+            <div class="chips" id="det-chips" role="group" aria-label="Detectors (keys 1 to 6)"></div>
+            <span class="sep" aria-hidden="true"></span>
+            <div class="chips" id="mol-chips" role="group" aria-label="Molecule presets"></div>
+          </div>
+          <div class="wave-row wave-foot">
+            <p class="wave-note grow" id="wave-note" hidden></p>
+          </div>
+        </section>
+
+        <aside class="rail rail-left" aria-label="Display">
+          <details class="panel" id="p-notices" open hidden>
+            <summary>About this field</summary>
+            <div class="panel-body"><div class="notices" id="notices"></div></div>
+          </details>
+          <details class="panel" id="p-display" open>
+            <summary>Display</summary>
+            <div class="panel-body">
+              <label class="slider"><span class="micro" title="Raise to darken the background">Shadows</span><input type="range" id="range-lo" min="0" max="90" step="1" /></label>
+              <label class="slider"><span class="micro" title="Lower to brighten faint sources">Highlights</span><input type="range" id="range-hi" min="90" max="100" step="0.05" /></label>
+              <div class="row">
+                <label class="check"><input type="checkbox" id="invert" /><span>Invert</span></label>
+                <button type="button" class="btn small ghost" id="stretch-reset">Reset</button>
+              </div>
+              <div class="row" id="wise-band-row">
+                <span class="micro" title="W1 is 3.4 µm, W2 is 4.6 µm. Cold brown dwarfs are brightest in W2.">WISE band</span>
+                <div class="seg" role="radiogroup" aria-label="WISE band" id="wise-band">
+                  <button type="button" role="radio" data-band="W1">W1</button>
+                  <button type="button" role="radio" data-band="W2">W2</button>
+                </div>
+              </div>
+            </div>
+          </details>
+          <details class="panel" id="p-overlays" open>
+            <summary>Overlays</summary>
+            <div class="panel-body">
+              <div class="ov-list" id="ov-list"></div>
+                            <div class="notices" id="ov-notes"></div>
+            </div>
+          </details>
+        </aside>
+
+        <aside class="rail rail-right" aria-label="Measurements">
+          <details class="panel" id="p-spectrum" open>
+            <summary>Spectrum</summary>
+            <div class="panel-body">
+              <div class="plot-head" id="spec-head"></div>
+              <div class="plot" id="spec-plot"></div>
+              <div class="plot-head" id="lc-head"></div>
+              <div class="plot plot-short" id="lc-plot"></div>
+            </div>
+          </details>
+          <details class="panel" id="p-frame">
+            <summary>This frame</summary>
+            <div class="panel-body">
+              <dl class="kv" id="frame-kv"></dl>
+            </div>
+          </details>
+          <details class="panel" id="p-finder" open>
+            <summary>Finder map</summary>
+            <div class="panel-body">
+              <div class="finder" id="finder"><p class="quiet">Loading…</p></div>
+              <p class="hint" id="finder-note"></p>
+            </div>
+          </details>
+          <details class="panel" id="p-neossat" hidden>
+            <summary>NEOSSat <span class="summary-note num" id="neo-summary"></span></summary>
+            <div class="panel-body" id="neossat"></div>
+          </details>
+        </aside>
+      </main>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+  </body>
+</html>

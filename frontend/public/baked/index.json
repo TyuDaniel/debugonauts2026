@@ -1,0 +1,57 @@
+{
+ "fields": [
+  {
+   "key": "barnard",
+   "name": "Barnard's Star",
+   "ra": 269.446066,
+   "dec": 4.770816,
+   "n_px": [
+    64
+   ],
+   "blurb": "The fastest-moving star in the sky: about 145\" of travel across 14 years of WISE, 1.7 px across the SPHEREx visits, with hundreds of NEOSSat frames from the Canadian Space Agency."
+  },
+  {
+   "key": "epsindb",
+   "name": "Epsilon Indi B",
+   "ra": 331.098475,
+   "dec": -56.80128,
+   "n_px": [
+    64
+   ],
+   "blurb": "A nearby brown dwarf pair, well detected by SPHEREx; it moves under 1 px across the SPHEREx visits and leaves a clear WISE track.",
+   "note": "Epsilon Indi A, 6.7' away, throws ghosts and glare that change between visits; no Pan-STARRS coverage this far south."
+  },
+  {
+   "key": "wise0855",
+   "name": "WISE 0855−0714",
+   "ra": 133.757714,
+   "dec": -7.242018,
+   "n_px": [
+    64
+   ],
+   "blurb": "The coldest known brown dwarf: a 16-year track, detected at SNR 16 by stacking 4.1–4.75 µm, with a spectrum that rises to the red.",
+   "note": "Invisible in single frames; a faint star sits 7\" away; the challenge coordinate is its old position, so it is moved by proper motion here and needs at least a 4' field."
+  },
+  {
+   "key": "rwaur",
+   "name": "RW Aurigae",
+   "ra": 76.95609,
+   "dec": 30.401122,
+   "n_px": [
+    64
+   ],
+   "blurb": "A young variable star: labelled with its variability type and period, with per-visit brightness."
+  },
+  {
+   "key": "rdra",
+   "name": "R Draconis",
+   "ra": 248.16722,
+   "dec": 66.755025,
+   "n_px": [
+    64
+   ],
+   "blurb": "A Mira variable (period 246 days) in the SPHEREx deep field: monthly coverage, the best time sampling of any target.",
+   "note": "A deep field with about 2,500 exposures, so about 600 spread evenly over every month and wavelength are loaded."
+  }
+ ]
+}

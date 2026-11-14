@@ -1,0 +1,127 @@
+<!doctype html>
+<!-- Written with AI assistance (Claude) for the NASA Space Apps 2026 hackathon. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050604" />
+    <title>SkyDive · 3D map of the Sun's neighbourhood</title>
+    <meta name="description" content="331,000 real stars within 100 parsecs of the Sun, in 3D, with 100,000 years of motion. Click a star and dive to its SPHEREx view." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c8f53a'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23eff2e9' stroke='%230d1104' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='7.5' fill='%2312160f'/%3E%3Cellipse cx='16' cy='17.5' rx='4' ry='4.5' fill='%23ff5a7a'/%3E%3Ccircle cx='16' cy='12.5' r='2.4' fill='%23eff2e9'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" />
+    <link rel="stylesheet" href="/src/explore/style.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="bugonaut" viewBox="0 0 64 64">
+        <path d="M16 62c0-7.5 6.5-12 16-12s16 4.5 16 12z" fill="var(--m-helmet)" stroke="var(--m-ink)" stroke-width="2.5" stroke-linejoin="round" />
+        <circle cx="32" cy="28" r="23" fill="var(--m-helmet)" stroke="var(--m-ink)" stroke-width="2.5" />
+        <circle cx="32" cy="28" r="17.5" fill="var(--m-glass)" stroke="var(--m-ink)" stroke-width="2" />
+        <g fill="none" stroke="var(--m-bug)" stroke-width="1.8" stroke-linecap="round">
+          <path d="M23 27l-4.5-2.5M22 32h-5M23 37l-4 3M41 27l4.5-2.5M42 32h5M41 37l4 3" />
+        </g>
+        <g fill="none" stroke="var(--m-helmet)" stroke-width="1.6" stroke-linecap="round">
+          <path d="M29.5 18.5c-.8-2.8-2.6-4.300-5-4.8M34.5 18.5c.8-2.8 2.6-4.300 5-4.8" />
+        </g>
+        <circle cx="32" cy="22.5" r="5.5" fill="var(--m-helmet)" />
+        <ellipse cx="32" cy="33" rx="9.5" ry="10.5" fill="var(--m-bug)" />
+        <path d="M32 23v20.5" stroke="var(--m-ink)" stroke-width="1.5" />
+        <g fill="var(--m-ink)">
+          <circle cx="29.8" cy="20.8" r="1" /><circle cx="34.2" cy="20.8" r="1" />
+          <circle cx="27.5" cy="30" r="1.9" /><circle cx="36.5" cy="30" r="1.9" />
+          <circle cx="28" cy="37.5" r="1.5" /><circle cx="36" cy="37.5" r="1.5" />
+        </g>
+        <path d="M14.5 21a19.5 19.5 0 0 1 8-9.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".85" />
+      </symbol>
+    </svg>
+    <canvas id="sky" aria-label="3D map of stars within 100 parsecs of the Sun. Drag to orbit, scroll or pinch to zoom, click a star for details."></canvas>
+    <div id="vignette" aria-hidden="true"></div>
+    <div id="labels" aria-hidden="true"></div>
+    <div id="ring-sel" class="ring ring-sel" hidden aria-hidden="true"></div>
+    <div id="ring-hover" class="ring ring-hover" hidden aria-hidden="true"></div>
+    <div id="tip" hidden aria-hidden="true"></div>
+
+    <header id="top">
+      <div class="brand">
+        <a class="wordmark" href="/" title="Open the SkyDive viewer"><svg class="bugonaut" aria-hidden="true"><use href="#bugonaut" /></svg><span>SkyDive</span></a>
+        <span class="team-tag">by Debugonauts</span>
+        <span class="tagline">Every known star within 100 parsecs</span>
+      </div>
+      <div class="top-actions">
+        <div class="search" id="search">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <input id="q" type="search" placeholder="Find a star by name" autocomplete="off" spellcheck="false"
+                 role="combobox" aria-expanded="false" aria-controls="results" aria-label="Find a star by name" />
+          <kbd>/</kbd>
+          <ul id="results" role="listbox" hidden></ul>
+        </div>
+        <button type="button" id="home" class="icon-btn" aria-label="Reset view" title="Reset view">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="5.2" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><path d="M8 .8v2.4M8 12.8v2.4M.8 8h2.4M12.8 8h2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+        <a class="viewer-link" href="/">Open viewer <span aria-hidden="true">→</span></a>
+      </div>
+    </header>
+
+    <aside id="card" hidden aria-live="polite"></aside>
+
+    <div id="bottom">
+      <section id="panel">
+        <div class="seg" role="group" aria-label="Colour stars by">
+          <button type="button" id="mode-colour" aria-pressed="true">Star colour</button>
+          <button type="button" id="mode-motion" aria-pressed="false">Motion</button>
+        </div>
+        <details id="legend">
+          <summary>Legend</summary>
+          <div class="legend-body">
+            <div id="legend-colour">
+              <div class="ramp ramp-colour" aria-hidden="true"></div>
+              <div class="ramp-ticks"><span>hot, blue</span><span>Sun-like</span><span>cool, red</span></div>
+              <p class="fine">Size shows brightness from where you are.</p>
+            </div>
+            <div id="legend-motion" hidden>
+              <div class="ramp ramp-motion" aria-hidden="true"></div>
+              <div class="ramp-ticks"><span>0.6″</span><span>6.2″ = 1 SPHEREx pixel</span><span>60″</span></div>
+              <p class="fine">How far each star moves across the sky in ten years.</p>
+            </div>
+            <ul class="keys">
+              <li><span class="key key-bd" aria-hidden="true"></span>Brown dwarfs (within 20 pc)</li>
+              <li><span class="key key-sun" aria-hidden="true"></span>The Sun, with 10–100 pc rings</li>
+              <li><span class="key key-far" aria-hidden="true"></span>Targets beyond the map</li>
+            </ul>
+            <p class="fine" id="counts"></p>
+            <p class="fine">Data: Gaia Catalogue of Nearby Stars (Gaia EDR3); Kirkpatrick et al. 2024 20-pc census; XHIP (Hipparcos, Anderson &amp; Francis 2012) for the brightest stars and their radial velocities; Gaia DR3 for the radial velocity of Barnard's Star.</p>
+            <p class="fine hint" id="hint">Drag to orbit, scroll to zoom, WASD to fly.</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="time" aria-label="Time">
+        <button type="button" id="play" class="icon-btn" aria-label="Play">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path id="play-icon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>
+        </button>
+        <div class="slider-wrap">
+          <input id="t" type="range" min="-50000" max="50000" step="50" value="0" aria-label="Time in years from now" />
+          <div class="slider-ticks" aria-hidden="true"><span>−50,000 yr</span><span>now</span><span>+50,000 yr</span></div>
+        </div>
+        <output id="t-out" for="t">Now</output>
+      </section>
+
+      <footer id="honesty">
+        <p>Positions from Gaia.</p>
+      </footer>
+    </div>
+
+    <div id="loading" role="status">
+      <div class="loading-inner">
+        <svg class="loading-bug bugonaut" aria-hidden="true"><use href="#bugonaut" /></svg>
+        <span class="wordmark">SkyDive</span>
+                <span id="loading-text">Loading 331,802 stars</span>
+        <span class="bar"><i id="loading-bar"></i></span>
+      </div>
+    </div>
+    <div id="fade" aria-hidden="true"></div>
+    <script type="module" src="/src/explore/main.ts"></script>
+  </body>
+</html>
