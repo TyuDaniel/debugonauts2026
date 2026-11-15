@@ -181,7 +181,7 @@ Every setting is stored in the page address: position, field of view, wavelength
 Open it from the mission patch on the landing page or by going to `/explore`. It shows 331,802 stars and brown dwarfs within 100 parsecs, with the Sun at the centre and rings at 10, 25, 50 and 100 pc.
 
 - Drag to orbit, scroll or pinch to zoom, and double-click to centre on the selected star. W A S D or the arrow keys fly; Q and E move down and up. The target button resets the view.
-- On a touch screen, one finger slides the map and two fingers pinch to zoom and turn it. In the small map on the landing page of a phone, one finger scrolls the page instead, so the map never traps the scroll; two fingers still move the map.
+- On a touch screen, one finger slides the map. Two fingers pinch to zoom towards the pinch, and slide together to turn the map. In the small map on the landing page of a phone, one finger scrolls the page instead, so the map never traps the scroll; two fingers still move the map.
 - **Star colour** colours stars by temperature, from hot and blue to cool and red. **Motion** colours them by how far they move across our sky in a decade; bright stars are the fast movers, the best places to look for motion in the viewer.
 - Brown dwarfs are drawn as rings. Dashed markers point towards prepared targets that lie beyond the map.
 - The time slider at the bottom moves every star along its real motion up to 50,000 years into the past or the future. Press play to animate it, or drag the slider back to the middle to return to today.

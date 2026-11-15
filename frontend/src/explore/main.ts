@@ -101,11 +101,14 @@ async function start(): Promise<void> {
   controls.dampingFactor = 0.07;
   controls.rotateSpeed = 0.55;
   controls.zoomSpeed = 0.9;
-  // Zoom towards the cursor, or towards the middle of a pinch.
+  // The wheel and a trackpad pinch zoom towards the cursor.
   controls.zoomToCursor = true;
-  // Touch works like a 3D map app: one finger drags the map, two fingers pinch to zoom and slide together to orbit.
-  controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
-  controls.zoomToCursor = !coarsePointer.matches; // desktop: zoom towards the cursor
+  // Touch works like a 3D map app: one finger drags the map, two fingers pinch to zoom and slide
+  // together to orbit. OrbitControls only does the one finger; its own two-finger gesture turns
+  // the map with every pinch and zooms on the middle of the screen, so two fingers are handled
+  // further down (see "two fingers").
+  const NO_GESTURE = -1 as THREE.TOUCH; // any value OrbitControls does not know makes it stand by
+  controls.touches = { ONE: THREE.TOUCH.PAN, TWO: NO_GESTURE };
   controls.panSpeed = 0.6;
   controls.minDistance = 0.3;
   controls.maxDistance = 900;
@@ -125,8 +128,7 @@ async function start(): Promise<void> {
   let cooperative = false;
   function syncTouchMode(): void {
     cooperative = parentScrolls();
-    // Any value other than a known gesture makes OrbitControls ignore a single finger.
-    controls.touches.ONE = cooperative ? (-1 as THREE.TOUCH) : THREE.TOUCH.PAN;
+    controls.touches.ONE = cooperative ? NO_GESTURE : THREE.TOUCH.PAN;
     canvas.style.touchAction = cooperative ? 'pan-y' : 'none';
   }
   syncTouchMode();
@@ -564,14 +566,95 @@ async function start(): Promise<void> {
   // ---- pointer: click to pick, hover to preview -------------------------------------------------
   let downX = 0, downY = 0, downT = 0, dragging = false;
   let pointerX = -1, pointerY = -1, pointerMoved = false;
-  const touching = new Set<number>();
   let multiTouch = false;
   const coopHint = $('coop-hint');
   let coopTimer = 0;
+
+  // ---- two fingers: pinch to zoom, slide together to turn ---------------------------------------
+  // A pinch is direct manipulation: what is under the fingers stays under them, so the map zooms
+  // towards the pinch and follows it, and it stops dead when the fingers lift. Whether the two
+  // fingers are pinching or sliding together is settled in the first few pixels and then kept,
+  // so that a pinch never also turns the map.
+  interface Finger { x: number; y: number; x0: number; y0: number }
+  const fingers = new Map<number, Finger>();
+  let gesture: { mode: 'undecided' | 'zoom' | 'turn'; dist: number; mx: number; my: number; lockDist: number } | null = null;
+  const gOffset = new THREE.Vector3();
+  const gRight = new THREE.Vector3();
+  const gUp = new THREE.Vector3();
+  const gPoint = new THREE.Vector3();
+  const pair = (): { dist: number; mx: number; my: number } => {
+    const [a, b] = [...fingers.values()];
+    return { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  };
+  function beginGesture(): void {
+    if (fingers.size !== 2) { gesture = null; return; }
+    for (const f of fingers.values()) { f.x0 = f.x; f.y0 = f.y; }
+    const p = pair();
+    gesture = { mode: 'undecided', ...p, lockDist: p.dist };
+  }
+  function moveGesture(): void {
+    const g = gesture;
+    if (!g || diving || fingers.size !== 2) return;
+    const now = pair();
+    if (g.mode === 'undecided') {
+      const [a, b] = [...fingers.values()];
+      const ax = a.x - a.x0, ay = a.y - a.y0, bx = b.x - b.x0, by = b.y - b.y0;
+      const la = Math.hypot(ax, ay), lb = Math.hypot(bx, by);
+      if (Math.max(la, lb) < 8) return;
+      // Sliding together: both fingers travel the same way, about as far as each other.
+      const together = ax * bx + ay * by > 0 && Math.min(la, lb) > 0.35 * Math.max(la, lb);
+      const slide = Math.hypot((ax + bx) / 2, (ay + by) / 2);
+      g.mode = together && slide > Math.abs(now.dist - g.lockDist) ? 'turn' : 'zoom';
+      // A turn starts from here, so it does not jump. A pinch keeps its very first position:
+      // the stars under the fingers when they landed are the ones that stay under them.
+      if (g.mode === 'turn') { Object.assign(g, now, { lockDist: now.dist }); return; }
+    }
+    // Fingers that set off together but then clearly spread or close were pinching after all.
+    if (g.mode === 'turn' && Math.abs(now.dist - g.lockDist) > Math.max(36, 0.3 * g.lockDist)) {
+      g.mode = 'zoom';
+      g.dist = now.dist;
+    }
+
+    gOffset.subVectors(camera.position, controls.target);
+    const radius = gOffset.length();
+    gRight.crossVectors(camera.up, gOffset).normalize(); // screen right
+    gUp.crossVectors(gOffset, gRight).normalize(); // screen up
+    if (g.mode === 'zoom') {
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      // World units per pixel at the depth of the orbit centre.
+      const perPx = (2 * radius * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) / rect.height;
+      const scale = THREE.MathUtils.clamp((radius * g.dist) / now.dist, controls.minDistance, controls.maxDistance) / radius;
+      // The point that was under the middle of the pinch goes back under it at the new scale.
+      gPoint.copy(controls.target).addScaledVector(gRight, (g.mx - cx) * perPx).addScaledVector(gUp, -(g.my - cy) * perPx);
+      controls.target.copy(gPoint).addScaledVector(gRight, -(now.mx - cx) * perPx * scale).addScaledVector(gUp, (now.my - cy) * perPx * scale);
+      camera.position.copy(controls.target).addScaledVector(gOffset, scale);
+    } else {
+      // The same turn a mouse drag gives, around the orbit centre.
+      const k = (2 * Math.PI * controls.rotateSpeed) / height;
+      gOffset.applyAxisAngle(camera.up, -(now.mx - g.mx) * k);
+      const polar = gOffset.angleTo(camera.up);
+      const next = THREE.MathUtils.clamp(polar - (now.my - g.my) * k, Math.max(controls.minPolarAngle, 1e-3), Math.min(controls.maxPolarAngle, Math.PI - 1e-3));
+      gRight.crossVectors(gOffset, camera.up).normalize();
+      gOffset.applyAxisAngle(gRight, polar - next);
+      camera.position.copy(controls.target).add(gOffset);
+    }
+    Object.assign(g, now);
+  }
+  function liftFinger(id: number): void {
+    fingers.delete(id);
+    beginGesture();
+    // After a pinch the finger that lifts last would otherwise shove the map on its way off.
+    if (fingers.size === 0) syncTouchMode();
+  }
+
   canvas.addEventListener('pointerdown', (ev) => {
     if (ev.pointerType === 'touch') {
-      touching.add(ev.pointerId);
-      multiTouch = touching.size > 1;
+      if (ev.isPrimary) fingers.clear(); // a new touch: forget any finger whose lift was never reported
+      fingers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY });
+      multiTouch = fingers.size > 1;
+      if (multiTouch) controls.touches.ONE = NO_GESTURE;
+      beginGesture();
     } else multiTouch = false;
     downX = ev.clientX; downY = ev.clientY; downT = performance.now();
     dragging = true;
@@ -583,8 +666,8 @@ async function start(): Promise<void> {
     hideHover();
   });
   canvas.addEventListener('pointerup', (ev) => {
-    touching.delete(ev.pointerId);
-    dragging = touching.size > 0;
+    liftFinger(ev.pointerId);
+    dragging = fingers.size > 0;
     if (diving || multiTouch) return;
     if (Math.hypot(ev.clientX - downX, ev.clientY - downY) > 6 || performance.now() - downT > 500) return;
     const touch = ev.pointerType === 'touch' || coarsePointer.matches;
@@ -599,14 +682,17 @@ async function start(): Promise<void> {
     else if (selection) select(null, false);
   });
   canvas.addEventListener('pointercancel', (ev) => {
-    touching.delete(ev.pointerId);
-    dragging = touching.size > 0;
+    liftFinger(ev.pointerId);
+    dragging = fingers.size > 0;
   });
   canvas.addEventListener('pointermove', (ev) => {
     if (ev.pointerType !== 'mouse') {
+      const f = fingers.get(ev.pointerId);
+      if (f) { f.x = ev.clientX; f.y = ev.clientY; }
+      if (gesture) { moveGesture(); return; }
       // One finger dragged sideways across the embedded map does nothing: say what does.
       // (Dragged up or down it scrolls the page, and the browser takes the gesture away.)
-      if (cooperative && touching.size === 1 && !multiTouch && Math.abs(ev.clientX - downX) > 28) {
+      if (cooperative && fingers.size === 1 && !multiTouch && Math.abs(ev.clientX - downX) > 28) {
         coopHint.classList.add('on');
         window.clearTimeout(coopTimer);
         coopTimer = window.setTimeout(() => coopHint.classList.remove('on'), 1800);
@@ -898,6 +984,18 @@ async function start(): Promise<void> {
       return { x: (p.x * 0.5 + 0.5) * width, y: (0.5 - p.y * 0.5) * height };
     },
     indexOf(name: string) { return meta.named.find((e) => e.n === name)?.i ?? -1; },
+    view: () => ({ pos: camera.position.toArray(), target: controls.target.toArray() }),
+    // The point under a screen pixel, at the depth of the orbit centre; and back to the screen.
+    worldAt(x: number, y: number) {
+      const dir = camera.getWorldDirection(new THREE.Vector3());
+      const ray = new THREE.Vector3((x / width) * 2 - 1, 1 - (y / height) * 2, 0.5).unproject(camera).sub(camera.position).normalize();
+      const depth = controls.target.clone().sub(camera.position).dot(dir);
+      return camera.position.clone().addScaledVector(ray, depth / ray.dot(dir)).toArray();
+    },
+    screenAt(p: [number, number, number]) {
+      const v = new THREE.Vector3(...p).project(camera);
+      return { x: (v.x * 0.5 + 0.5) * width, y: (0.5 - v.y * 0.5) * height };
+    },
     diveUrl: () => (selection ? diveUrl(selection) : null),
   };
 }
