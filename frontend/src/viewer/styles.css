@@ -11,6 +11,10 @@
   --ink-2: #b9bfb0;
   --ink-3: #8b9280;
   --accent: #c8f53a;
+  /* The three parts of a false-colour picture. */
+  --fc-r: #ff6854;
+  --fc-g: #60de78;
+  --fc-b: #60a0ff;
   --accent-hi: #dcff6b;
   --accent-dim: rgba(200, 245, 58, 0.13);
   --accent-ink: #0d1104;
@@ -1270,6 +1274,59 @@ select option:disabled {
   border-top: 2px solid var(--accent);
   background: var(--accent-dim);
   pointer-events: none;
+}
+/* False colour: the selection shows the three parts it is cut into. */
+.wave-track.fc .wave-sel {
+  border-top: 0;
+  background:
+    linear-gradient(90deg, var(--fc-b) 0 33.33%, var(--fc-g) 33.33% 66.67%, var(--fc-r) 66.67%) top / 100% 2px no-repeat,
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--fc-b) 16%, transparent) 0 33.33%,
+      color-mix(in oklab, var(--fc-g) 13%, transparent) 33.33% 66.67%,
+      color-mix(in oklab, var(--fc-r) 16%, transparent) 66.67%
+    );
+}
+.fc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fc-dots {
+  width: 18px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--fc-b) 0 33.33%, var(--fc-g) 33.33% 66.67%, var(--fc-r) 66.67%);
+}
+.fc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.fc-legend[hidden] {
+  display: none;
+}
+.fc-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.fc-key i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.fc-r i {
+  background: var(--fc-r);
+}
+.fc-g i {
+  background: var(--fc-g);
+}
+.fc-b i {
+  background: var(--fc-b);
 }
 .wave-handle {
   position: absolute;

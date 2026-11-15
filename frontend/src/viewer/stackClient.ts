@@ -21,7 +21,9 @@ class StackClient {
   }
 
   reset(nPx: number): void {
-    this.pending.clear();
+    // Calls already sent are still answered, in order, before the worker resets; dropping them here
+    // would leave a restack waiting for ever and the new field without stacks. Callers check the
+    // session after each answer.
     this.worker.postMessage({ t: 'reset', nPx, maskWord: MASK_WORD });
   }
 

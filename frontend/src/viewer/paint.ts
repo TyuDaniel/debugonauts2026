@@ -58,7 +58,8 @@ export function paintImage(ctx: CanvasRenderingContext2D, size: number, pic: Pic
   const { data, lo, offset } = pic;
   const span = pic.hi - lo || 1;
   const useAsinh = stretch === 'asinh' && !pic.diverging;
-  for (let i = 0; i < data.length; i++) {
+  if (pic.rgb) paintColour(px, pic.rgb, stretch === 'asinh');
+  else for (let i = 0; i < data.length; i++) {
     const v = data[i];
     if (v !== v) {
       px[i] = 0xff1c1612; // no data: a dark blue-grey, distinct from black sky
@@ -77,6 +78,50 @@ export function paintImage(ctx: CanvasRenderingContext2D, size: number, pic: Pic
   ctx.imageSmoothingEnabled = false;
   const r = pictureRect(pic, size, view);
   ctx.drawImage(scratch, r.x, r.y, r.w, r.w);
+}
+
+/**
+ * False colour: three images as red, green and blue. Each is scaled between its own limits, so the
+ * brightest stars set white and a source that is brighter in one part of the range takes that
+ * colour. The stretch is applied to the brightness and the colour is kept (Lupton et al. 2004);
+ * anything brighter than the limits clips to white. A pixel with no data in one of the colours
+ * (the masked core of a saturated star) has no known colour and is drawn grey. Invert is not
+ * applied: it would turn red into cyan.
+ */
+function paintColour(px: Uint32Array, rgb: NonNullable<Picture['rgb']>, useAsinh: boolean): void {
+  const lo = rgb.lo;
+  const span = rgb.hi.map((h, c) => h - lo[c] || 1);
+  // A colour with no exposures behind it, or no usable limits, stays dark for the whole picture.
+  const live = rgb.n.map((n, c) => n > 0 && isFinite(lo[c]) && isFinite(span[c]));
+  const t = [0, 0, 0];
+  for (let i = 0; i < px.length; i++) {
+    let have = 0,
+      sum = 0,
+      missing = false;
+    for (let c = 0; c < 3; c++) {
+      t[c] = 0;
+      if (!live[c]) continue;
+      const v = rgb.data[c][i];
+      if (v !== v) {
+        missing = true;
+        continue;
+      }
+      t[c] = Math.max(0, (v - lo[c]) / span[c]);
+      sum += t[c];
+      have++;
+    }
+    if (!have) {
+      px[i] = 0xff1c1612; // no data in any colour
+      continue;
+    }
+    const mean = sum / have;
+    if (missing) t[0] = t[1] = t[2] = mean;
+    const f = useAsinh && mean > 0 ? Math.asinh(mean * ASINH_K) / ASINH_NORM / mean : 1;
+    const r = Math.min(1, t[0] * f),
+      g = Math.min(1, t[1] * f),
+      b = Math.min(1, t[2] * f);
+    px[i] = 0xff000000 | (((b * 255 + 0.5) | 0) << 16) | (((g * 255 + 0.5) | 0) << 8) | ((r * 255 + 0.5) | 0);
+  }
 }
 
 function paintTint(ctx: CanvasRenderingContext2D, size: number, pic: Picture, view: Zoom): void {

@@ -172,11 +172,14 @@
             </div>
           </div>
           <div class="wave-row wrap">
+            <button type="button" class="chip fc-chip" id="fc-toggle" aria-pressed="false" title="False colour (key C): cuts the selected range into three equal parts and draws the shortest wavelengths blue, the middle green and the longest red. Cold objects glow red."><i class="fc-dots" aria-hidden="true"></i>False colour</button>
+            <span class="sep" aria-hidden="true"></span>
             <div class="chips" id="det-chips" role="group" aria-label="Detectors (keys 1 to 6)"></div>
             <span class="sep" aria-hidden="true"></span>
             <div class="chips" id="mol-chips" role="group" aria-label="Molecule presets"></div>
           </div>
           <div class="wave-row wave-foot">
+            <p class="fc-legend num" id="fc-legend" hidden></p>
             <p class="wave-note grow" id="wave-note" hidden></p>
           </div>
         </section>

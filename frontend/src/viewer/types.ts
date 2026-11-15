@@ -151,6 +151,25 @@ export interface StackResult {
   ids: number[];
 }
 
+/** False colour: one frame or stack built three times, from the red, green and blue parts of the range. */
+export interface ColourStack {
+  img: Float32Array[];
+  /** Exposures behind each colour. */
+  n: number[];
+}
+
+/** False-colour stacks for the current settings. Arrays run red, green, blue. */
+export interface ColourSet {
+  /** Per-visit stacks keyed by frame id. */
+  frames: Map<string, ColourStack>;
+  /** Group A stacked. */
+  combo: ColourStack | null;
+  /** Sorted pooled sample of each colour's pixel values, for percentiles. */
+  samples: Float32Array[];
+  /** Wavelength range of each colour, in micrometres. */
+  bands: [number, number][];
+}
+
 export interface PhotPoint {
   idx: number;
   wave: number;

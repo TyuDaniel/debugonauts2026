@@ -3,7 +3,7 @@
 import { currentPicture, frameById, playlist } from './compute';
 import { fmtDeg, mjdIso } from './coords';
 import { $, toast } from './dom';
-import { encodeGif, quantise } from './gif';
+import { encodeGif, quantise, quantiseColour, type GifFrame } from './gif';
 import { paintImage, paintOverlay } from './paint';
 import { store } from './store';
 import { displayMjd } from './view';
@@ -32,7 +32,7 @@ async function exportGif(): Promise<void> {
   c.height = size + cap;
   const g = c.getContext('2d', { willReadFrequently: true })!;
   const ids = st.mode === 'blink' ? playlist().map((f) => f.id) : [st.frame];
-  const frames: Uint8Array[] = [];
+  const frames: GifFrame[] = [];
   toast('Building GIF…');
   await new Promise((r) => setTimeout(r, 30));
   for (const id of ids) {
@@ -52,7 +52,10 @@ async function exportGif(): Promise<void> {
     g.fillStyle = '#b9bfb0';
     g.font = '500 11px Geist, system-ui, sans-serif';
     g.fillText(`SkyDive  ${fmtDeg(st.ra!, 4)} ${fmtDeg(st.dec!, 4)}`, size - 10, size + cap / 2);
-    frames.push(quantise(g.getImageData(0, 0, c.width, c.height).data));
+    const data = g.getImageData(0, 0, c.width, c.height).data;
+    // Colour composites get their own adaptive palette; grey frames keep the shared one.
+    const colour = !!(res.picture as { rgb?: unknown }).rgb;
+    frames.push(colour ? quantiseColour(data) : quantise(data));
   }
   if (!frames.length) {
     toast('Nothing to export yet.');

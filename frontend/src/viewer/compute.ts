@@ -4,7 +4,7 @@
 import { propagate, sepArcsec, skyToOffset } from './coords';
 import { stacker } from './stackClient';
 import { store } from './store';
-import { DETECTORS, MJYSR_TO_UJY, SPHEREX_SCALE, type Exposure, type Frame, type HistFrame, type PhotPoint } from './types';
+import { DETECTORS, MJYSR_TO_UJY, SPHEREX_SCALE, type ColourStack, type Exposure, type Frame, type HistFrame, type PhotPoint } from './types';
 
 export const frameById = (id: string | null): Frame | undefined => store.session.frames.find((f) => f.id === id);
 
@@ -38,6 +38,21 @@ export function selectedExposures(): Exposure[] {
   return store.session.exposures.filter(
     (e) => e.loaded && e.ok && e.wave_um != null && e.wave_um >= wl[0] && e.wave_um <= wl[1] && !ex.has(e.id) && e.flag_frac <= MAX_FLAGGED,
   );
+}
+
+/** False colour: the selected range cut into three equal parts, longest wavelengths first (red, green, blue). */
+export function colourBands(wl: [number, number] = store.state.wl): [number, number][] {
+  const [a, b] = wl;
+  const w = (b - a) / 3;
+  return [[a + 2 * w, b], [a + w, a + 2 * w], [a, a + w]];
+}
+
+/** The exposures of one frame or group sorted into the three colours: red, green, blue. */
+function splitColours(list: Exposure[], wl: [number, number]): Exposure[][] {
+  const parts: Exposure[][] = [[], [], []];
+  const w = (wl[1] - wl[0]) / 3 || 1;
+  for (const e of list) parts[2 - Math.min(2, Math.max(0, Math.floor((e.wave_um! - wl[0]) / w)))].push(e);
+  return parts;
 }
 
 interface Plan {
@@ -147,11 +162,35 @@ async function restack(): Promise<void> {
       queued = false;
       const s = store.session;
       const key = stackKey();
+      const fc = store.state.fc;
+      const wl: [number, number] = [...store.state.wl];
       const p = plan();
       const visits = [...p.perVisit.keys()];
       const sets = [...visits.map((v) => p.perVisit.get(v)!), p.a, p.b].map((l) => l.map((e) => e.idx));
       const r = await stacker.stack(sets);
       if (store.session !== s) continue;
+      // False colour: every visit and group A once more, split by wavelength into red, green and blue.
+      // A separate pass, so the grey stretch limits do not depend on whether colour is on.
+      let colour: typeof s.colour = null;
+      if (fc) {
+        const cSets = [...visits.map((v) => p.perVisit.get(v)!), p.a].flatMap((l) => splitColours(l, wl)).map((l) => l.map((e) => e.idx));
+        const rc = await stacker.stack(cSets);
+        if (store.session !== s) continue;
+        const take = (i: number): ColourStack => ({ img: [0, 1, 2].map((c) => rc.out[3 * i + c].img), n: [0, 1, 2].map((c) => cSets[3 * i + c].length) });
+        const frames = new Map<string, ColourStack>();
+        visits.forEach((v, i) => {
+          if (sets[i].length) frames.set('s' + v, take(i));
+        });
+        const combo = sets[visits.length].length ? take(visits.length) : null;
+        // Each colour gets its own limits, from that colour's frames.
+        const samples = [0, 1, 2].map((c) => {
+          const imgs = [...frames.values()].filter((f) => f.n[c]).map((f) => f.img[c]);
+          if (!imgs.length && combo?.n[c]) imgs.push(combo.img[c]);
+          return imgs.length ? sortedSample(imgs) : new Float32Array();
+        });
+        colour = { frames, combo, samples, bands: colourBands(wl) };
+      }
+      s.colour = colour;
       s.stacks = new Map();
       visits.forEach((v, i) => {
         if (sets[i].length) s.stacks.set('s' + v, { ...r.out[i], n: sets[i].length, ids: sets[i] });
@@ -225,6 +264,11 @@ export interface Picture {
   title: string;
   n: number;
   unit: string;
+  /**
+   * False colour: three images painted as red, green and blue, each with its own limits. `data`
+   * stays the grey image of the whole range, for the cursor readout and for centring on a source.
+   */
+  rgb?: { data: Float32Array[]; lo: number[]; hi: number[]; n: number[]; bands: [number, number][] } | null;
 }
 
 export function histOf(f: Frame): HistFrame | undefined {
@@ -296,6 +340,12 @@ export function currentPicture(frameId: string | null = store.state.frame): Pict
     };
   };
 
+  const colourOf = (cs: ColourStack | null | undefined): Picture['rgb'] => {
+    const c = s.colour;
+    if (!st.fc || !c || !cs) return null;
+    return { data: cs.img, n: cs.n, bands: c.bands, lo: c.samples.map((x) => percentile(x, pLo)), hi: c.samples.map((x) => percentile(x, pHi)) };
+  };
+
   if (st.mode === 'blink') {
     const f = frameById(frameId);
     if (!f) return { message: s.status === 'loading' ? '' : 'No frame selected.' };
@@ -308,6 +358,7 @@ export function currentPicture(frameId: string | null = store.state.frame): Pict
       picture: {
         data: stack.img, nPx: s.nPx, pixscale: SPHEREX_SCALE, offset: 0, lo: percentile(s.sample, pLo), hi: percentile(s.sample, pHi),
         diverging: false, tint: stack.tint, kind: 'spherex', ids: stack.ids, title: f.label, n: stack.n, unit: 'MJy/sr',
+        rgb: colourOf(s.colour?.frames.get(f.id)),
       },
     };
   }
@@ -331,6 +382,7 @@ export function currentPicture(frameId: string | null = store.state.frame): Pict
         picture: {
           data: s.comboA.img, nPx: s.nPx, pixscale: SPHEREX_SCALE, offset: 0, lo: percentile(s.sample, pLo), hi: percentile(s.sample, pHi),
           diverging: false, tint: s.comboA.tint, kind: 'spherex', ids: s.comboA.ids, title: `Group ${st.show[0]}: stack of ${picked.length} visit${picked.length === 1 ? '' : 's'}`, n: s.comboA.n, unit: 'MJy/sr',
+          rgb: colourOf(s.colour?.combo),
         },
       };
     }

@@ -143,7 +143,7 @@ export function initView(): void {
       cancelAnimationFrame(zoomAnim);
       applyZoom({ ...NO_ZOOM });
     }
-    if (['frame', 'mode', 'a', 'b', 'stretch', 'invert', 'range', 'ov', 'marks', 'wiseBand', 'src'].some((x) => k.has(x))) draw();
+    if (['frame', 'mode', 'a', 'b', 'stretch', 'invert', 'range', 'ov', 'marks', 'wiseBand', 'src', 'fc'].some((x) => k.has(x))) draw();
   });
   // The zoom limit depends on the field width, which arrives with the session.
   store.on('session', syncZoomUi);
@@ -478,6 +478,7 @@ function renderTitle(): void {
   if (picture.kind === 'spherex') {
     bits.push(`${fmt.wave(st.wl[0])}–${fmt.wave(st.wl[1])} µm`);
     bits.push(`${picture.n} exposure${picture.n === 1 ? '' : 's'}${picture.n < 5 ? ' (noisy)' : ''}`);
+    if (picture.rgb) bits.push('false colour');
   } else if (f?.kind === 'wise') bits.push(`${st.wiseBand} ${st.wiseBand === 'W1' ? '3.4' : '4.6'} µm`);
   sub.textContent = bits.join(' · ');
 }
@@ -671,5 +672,9 @@ function syncSourceControls(): void {
   const notSpherex = kind === 'wise' || kind === 'ps1';
   $('.wavebar').hidden = notSpherex;
   $('#wise-band-row').hidden = kind !== 'wise';
+  // A colour picture is never inverted: red would turn cyan.
+  const inv = $<HTMLInputElement>('#invert');
+  inv.disabled = !!picture?.rgb;
+  inv.closest('label')!.title = inv.disabled ? 'Invert is not used in false colour' : '';
 }
 

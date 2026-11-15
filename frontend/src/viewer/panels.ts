@@ -14,7 +14,7 @@ export function initPanels(): void {
   store.on(['session', 'overlay', 'history', 'sso', 'stacks'], renderNotices);
   store.on(['stacks', 'frames', 'session', 'cursor'], renderFrame);
   store.on('state', (k) => {
-    if (['frame', 'mode', 'a', 'b', 'wl', 'wiseBand'].some((x) => k.has(x))) renderFrame();
+    if (['frame', 'mode', 'a', 'b', 'wl', 'wiseBand', 'fc'].some((x) => k.has(x))) renderFrame();
   });
   store.on('neossat', renderNeossat);
   store.on('toast', () => toast('More exposures need the live data service, which is not answering.'));
@@ -157,6 +157,11 @@ const renderFrame = rafThrottle((): void => {
     row('Detectors', dets.map((d) => `D${d}`).join(' ') || '–');
     row('Wavelength', waves.length ? `${Math.min(...waves).toFixed(2)}–${Math.max(...waves).toFixed(2)} µm` : '–');
     row('Exposures', `${pic.n}${pic.n < 5 ? ' — fewer than 5: noisy, treat with care' : ''}`, '', 'Number of 113-second SPHEREx exposures combined (per-pixel median) into this picture');
+    if (pic.rgb) {
+      const { bands, n } = pic.rgb;
+      row('False colour', ['Red', 'Green', 'Blue'].map((name, c) => `${name} ${bands[c][0].toFixed(2)}–${bands[c][1].toFixed(2)} µm (${n[c]})`).join(', '), '',
+        'The wavelength range cut into three equal parts, and the number of exposures behind each colour. Each colour is scaled on its own, so a typical star is white.');
+    }
     if (st.mode === 'diff' && s.comboA && s.comboB) row(`${st.show[0]} − ${st.show[1]}`, `${s.comboA.n} minus ${s.comboB.n} exposures`);
     row('Release', rel.map((r) => r.replace('spherex_', '').toUpperCase()).join(', ') || '–', '', 'Which public SPHEREx data release these exposures come from');
     row('Pixel scale', '6.15″ per pixel');

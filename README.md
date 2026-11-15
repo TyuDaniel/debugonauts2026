@@ -4,7 +4,7 @@ SkyDive is a web tool that shows any patch of sky changing over sixteen years: W
 
 Built for NASA Space Apps 2026, challenge [Planet X and SPHEREx](https://www.spaceappschallenge.org/2026/challenges/planet-x-and-spherex/).
 
-- **Viewer** (`/`): coordinate box, blink, or stack and subtract groups of visits, wavelength bar with detector chips, click-for-spectrum, catalogue markers moved to each frame's date, quality flags, shareable URLs and embeds.
+- **Viewer** (`/`): coordinate box, blink, or stack and subtract groups of visits, wavelength bar with detector chips, false colour, click-for-spectrum, catalogue markers moved to each frame's date, quality flags, shareable URLs and embeds.
 - **3D map** (`/explore`): 331,802 stars and brown dwarfs within 100 parsecs with a ±50,000-year time slider. Click a star and dive to its SPHEREx view.
 
 The browser holds every aligned exposure, so stacking, wavelength selection and spectra are instant with no server round trip.
@@ -39,7 +39,7 @@ The other prepared fields show different things:
 |---|---|
 | Barnard's Star | The fastest-moving star in the sky. It is saturated in every SPHEREx band, so its spectrum comes from the halo around the core. |
 | Epsilon Indi B | A nearby brown dwarf pair. Its bright neighbour, Epsilon Indi A, throws ghosts and glare that change between visits, a good example of something that looks like change but is not. |
-| WISE 0855−0714 | The coldest known brown dwarf. It is only visible in SPHEREx when you stack the long wavelengths: select 4.1–4.75 µm and press **Stack all**. |
+| WISE 0855−0714 | The coldest known brown dwarf. It is only visible in SPHEREx when you stack the long wavelengths: select 4.1–4.75 µm and press **Stack all**. Or stack the whole range and switch on **False colour** (step 5): it is the red dot at the centre. |
 | RW Aurigae | A young variable star; click it and read the light curve. |
 | R Draconis | A Mira variable with a 246-day period, in a deep field with monthly visits. The light curve shows the brightness rising and falling. |
 
@@ -134,6 +134,27 @@ Different objects shine at different wavelengths. Stars like the Sun are brighte
 
 A feature is so narrow that each visit has only one to three exposures inside it. Clicking a preset therefore also stacks every visit together, which gives enough exposures for a usable image. Only bright sources show up.
 
+**False colour.** The **False colour** chip sits at the start of the chip row, before **D1**, and the **C** key toggles it too. It cuts the selected range into three equal parts and gives each part a colour:
+
+| Part of the range | Colour | With **All** selected |
+|---|---|---|
+| Shortest third | Blue | roughly 0.70–2.15 µm |
+| Middle third | Green | roughly 2.15–3.60 µm |
+| Longest third | Red | roughly 3.60–5.05 µm |
+
+Narrow the range with the handles or a detector chip and the three parts follow it, so any stretch of the 102 colours can be turned into a three-colour picture.
+
+Each SPHEREx frame or stack is then built three times, once per part, from the exposures whose wavelength falls in that part, and the three images are shown as the red, green and blue of one picture. Each colour is scaled on its own, between the same **Shadows** and **Highlights** limits, so the brightest stars in the field come out close to white. A source that is brighter at long wavelengths than the stars around it, such as a cold brown dwarf, comes out red, and a hotter one comes out blue.
+
+On the wavelength bar, the selected band and its histogram bars are tinted blue, green and red to show the three parts, and a line under the bar lists the three ranges. The frame title notes "false colour", and **This frame** lists how many exposures went into each colour.
+
+- False colour applies to SPHEREx single frames (Blink) and to **Stack**. It has no effect on **Subtract**, which keeps its diverging scale, or on WISE and Pan-STARRS frames, which stay grey.
+- **Invert** is ignored while a colour picture is shown. **Shadows** and **Highlights** still work.
+- A pixel with no data in one of the three parts, such as the core of a saturated star, has no known colour and is drawn grey.
+- A part with too few exposures gives a noisy colour. Molecule presets are too narrow to split into three, so use false colour with a detector or wider.
+
+To try it, open **WISE 0855−0714**, press **Stack all** and switch on **False colour**. The coldest known brown dwarf, invisible at short wavelengths, shows as a red dot at the centre while ordinary stars stay white or blue.
+
 **The exposure counter** under the bar reads "*n* of *m* exposures": *m* is the number of exposures loaded for the field and *n* is how many the current range uses. If *n* is 0, the field has no data in that range.
 
 **Matched wavelengths.** When Blink or a group difference compares frames from different visits, the viewer always matches their wavelengths. Each visit observes a field in a slightly different set of colours, and a star can look quite different at 1 µm and at 4 µm, so without matching a colour difference could look like a change over time. The viewer keeps only the colour bands that the compared visits share; SPHEREx's 102 colour channels are grouped into 36 bands of three channels each for this. If the visits share too few bands, it matches by detector instead, and a note under the bar says so, or says that the visits share nothing.
@@ -174,7 +195,7 @@ Every marker is moved to the date of the frame on screen using the catalogue's p
 
 ### Step 9: share what you found
 
-Every setting is stored in the page address: position, field of view, wavelength range, mode, groups, the frame on screen, display settings, overlays, excluded exposures and the measured source. Copying the address bar gives someone the exact same view. The share button also offers an embed code (an `<iframe>` for another web page) and exports the current playback as an animated GIF.
+Every setting is stored in the page address: position, field of view, wavelength range, false colour (as `fc=1`), mode, groups, the frame on screen, display settings, overlays, excluded exposures and the measured source. Copying the address bar gives someone the exact same view. The share button also offers an embed code (an `<iframe>` for another web page) and exports the current playback as an animated GIF. Shared links and embeds keep false colour, and with it on the GIF is in colour.
 
 ### The 3D map
 
@@ -215,6 +236,7 @@ A field someone has opened before loads faster the second time. The backend keep
 | Backend unit tests (offline) | pytest | `cd backend && .venv/bin/python -m pytest -q` |
 | Type check | TypeScript (`strict`) | `cd frontend && npm run typecheck` |
 | Production build | Vite | `cd frontend && npm run build` |
+| False colour in a real browser. Needs the dev server running (`npm run dev`); set `SKYDIVE_URL` if it is not on port 5173 | Playwright (Chromium) | `cd frontend && npm run test:fc` |
 
 ## Layout
 

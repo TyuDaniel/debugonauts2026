@@ -1,6 +1,7 @@
 // SkyDive viewer — one typed store: URL-synced view state plus the loaded session data.
 // Written with AI coding assistance (Claude Code).
 import type {
+  ColourSet,
   Exposure,
   Fov,
   Frame,
@@ -23,6 +24,8 @@ export interface ViewState {
   fov: Fov;
   wl: [number, number];
   matched: boolean;
+  /** False colour: the selected range cut into three parts, drawn as blue, green and red. */
+  fc: boolean;
   mode: Mode;
   /** The frames the stacker combines (A) and subtracts (B); derived from `groups` and `show`. */
   a: string[];
@@ -57,6 +60,7 @@ export const DEFAULTS: ViewState = {
   fov: 6.5,
   wl: [WL_MIN, WL_MAX],
   matched: true,
+  fc: false,
   mode: 'blink',
   a: [],
   b: [],
@@ -117,6 +121,8 @@ export interface Session {
   /** Combined A (+B) and B stacks for sum / diff. */
   comboA: StackResult | null;
   comboB: StackResult | null;
+  /** The same frames and group A split into three colours, while false colour is on. */
+  colour: ColourSet | null;
   /** Sorted pooled sample of stack pixel values, for percentiles. */
   sample: Float32Array | null;
   /** How wavelengths were matched for the current stacks. */
@@ -160,6 +166,7 @@ export function emptySession(token: number): Session {
     stacks: new Map(),
     comboA: null,
     comboB: null,
+    colour: null,
     sample: null,
     matchNote: '',
     selectedCount: 0,
@@ -274,6 +281,7 @@ export function serialize(s: ViewState): string {
   add('fov', String(s.fov));
   if (s.wl[0] !== DEFAULTS.wl[0] || s.wl[1] !== DEFAULTS.wl[1]) add('wl', `${num(s.wl[0], 3)}-${num(s.wl[1], 3)}`);
   if (!s.matched) add('mw', '0');
+  if (s.fc) add('fc', '1');
   if (s.mode !== 'blink') add('mode', s.mode);
   const gs = Object.entries(s.groups).filter(([, v]) => v.length);
   if (gs.length) {
@@ -329,6 +337,7 @@ export function deserialize(search: string, hash: string): ViewState {
   const wl = pair('wl');
   if (wl) s.wl = [Math.max(WL_MIN, wl[0]), Math.min(WL_MAX, wl[1])];
   if (p.get('mw') === '0') s.matched = false;
+  if (p.get('fc') === '1') s.fc = true;
   const mode = p.get('mode');
   if (mode === 'sum' || mode === 'diff' || mode === 'blink') s.mode = mode;
   const list = (k: string) => (p.get(k) ?? '').split(',').map((x) => x.trim()).filter(Boolean);

@@ -14,7 +14,7 @@ import { initSpectrum } from './spectrum';
 import { deserialize, store } from './store';
 import { initTimeline, step, togglePlay } from './timeline';
 import { getPicture, getPlaced, getZoom, initView, zoomStep } from './view';
-import { initWavebar, setDetector } from './wavebar';
+import { initWavebar, setDetector, toggleColour } from './wavebar';
 
 const app = $('#app');
 const input = $<HTMLInputElement>('#coord-input');
@@ -121,7 +121,7 @@ function boot(): void {
     if (k.has('ov')) ensureSso();
     if (k.has('ra') || k.has('dec') || k.has('fov')) {
       if (store.state.ra != null) void loadField();
-    } else if (['wl', 'matched', 'excluded', 'a', 'b', 'mode'].some((x) => k.has(x))) {
+    } else if (['wl', 'matched', 'excluded', 'a', 'b', 'mode', 'fc'].some((x) => k.has(x))) {
       requestRestack(true);
     }
   });
@@ -160,6 +160,9 @@ function boot(): void {
     } else if (/^[1-6]$/.test(e.key)) {
       setDetector(+e.key);
       toast(`Detector ${e.key}`);
+    } else if (e.key === 'c' || e.key === 'C') {
+      toggleColour();
+      toast(store.state.fc ? 'False colour on' : 'False colour off');
     } else if (e.key === '+' || e.key === '=') zoomStep(1);
     else if (e.key === '-' || e.key === '_') zoomStep(-1);
     else if (e.key === '0') zoomStep(0);

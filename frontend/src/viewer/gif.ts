@@ -1,4 +1,4 @@
-// SkyDive viewer — a small GIF89a encoder (LZW, fixed palette: 240 greys + 16 marker colours).
+// SkyDive viewer — a small GIF89a encoder (LZW, fixed palette: 240 greys + 16 marker colours; adaptive local palette for colour frames).
 // Written with AI coding assistance (Claude Code).
 
 const ACCENTS: [number, number, number][] = [
@@ -33,6 +33,65 @@ export function quantise(rgba: Uint8ClampedArray): Uint8Array {
     }
   }
   return out;
+}
+
+/** A frame: indices into the global palette, or indices plus that frame's own 256-colour local table. */
+export type GifFrame = Uint8Array | { indices: Uint8Array; palette: Uint8Array };
+
+/** Map RGBA pixels to an adaptive 256-colour palette: variance-driven median cut over a 6-bits-per-channel histogram. */
+export function quantiseColour(rgba: Uint8ClampedArray): { indices: Uint8Array; palette: Uint8Array } {
+  const BINS = 1 << 18;
+  const bin = (i: number) => ((rgba[i] >> 2) << 12) | ((rgba[i + 1] >> 2) << 6) | (rgba[i + 2] >> 2);
+  const cnt = new Uint32Array(BINS), sr = new Uint32Array(BINS), sg = new Uint32Array(BINS), sb = new Uint32Array(BINS);
+  for (let i = 0; i < rgba.length; i += 4) {
+    const id = bin(i);
+    cnt[id]++; sr[id] += rgba[i]; sg[id] += rgba[i + 1]; sb[id] += rgba[i + 2];
+  }
+  const used: number[] = [];
+  for (let id = 0; id < BINS; id++) if (cnt[id]) used.push(id);
+  const ids = Int32Array.from(used);
+  type Box = { lo: number; hi: number; shift: number; cut: number; err: number };
+  // Measure a run of bins: the channel with the largest squared error, that error, and the mean to cut at.
+  const box = (lo: number, hi: number): Box => {
+    let w = 0, s0 = 0, s1 = 0, s2 = 0, q0 = 0, q1 = 0, q2 = 0;
+    for (let i = lo; i < hi; i++) {
+      const id = ids[i], c = cnt[id], r = id >> 12, g = (id >> 6) & 63, b = id & 63;
+      w += c;
+      s0 += c * r; s1 += c * g; s2 += c * b;
+      q0 += c * r * r; q1 += c * g * g; q2 += c * b * b;
+    }
+    const e = [q0 - (s0 * s0) / w, q1 - (s1 * s1) / w, q2 - (s2 * s2) / w];
+    const a = e[0] >= e[1] && e[0] >= e[2] ? 0 : e[1] >= e[2] ? 1 : 2;
+    return { lo, hi, shift: 12 - 6 * a, cut: Math.floor([s0, s1, s2][a] / w), err: e[a] };
+  };
+  // Keep splitting the box with the largest error at its mean: the many dark sky tones and the few bright dots both get entries.
+  const boxes = [box(0, ids.length)];
+  while (boxes.length < 256) {
+    let k = 0;
+    for (let i = 1; i < boxes.length; i++) if (boxes[i].err > boxes[k].err) k = i;
+    const { lo, hi, shift, cut, err } = boxes[k];
+    if (err <= 0) break;
+    let m = lo;
+    for (let i = lo; i < hi; i++) {
+      const id = ids[i];
+      if (((id >> shift) & 63) <= cut) { ids[i] = ids[m]; ids[m++] = id; }
+    }
+    boxes[k] = box(lo, m);
+    boxes.push(box(m, hi));
+  }
+  const palette = new Uint8Array(256 * 3), lut = new Uint8Array(BINS);
+  boxes.forEach((bx, k) => {
+    let w = 0, r = 0, g = 0, b = 0;
+    for (let i = bx.lo; i < bx.hi; i++) {
+      const id = ids[i];
+      w += cnt[id]; r += sr[id]; g += sg[id]; b += sb[id];
+      lut[id] = k;
+    }
+    palette.set([Math.round(r / w), Math.round(g / w), Math.round(b / w)], k * 3);
+  });
+  const indices = new Uint8Array(rgba.length / 4);
+  for (let i = 0, j = 0; i < rgba.length; i += 4, j++) indices[j] = lut[bin(i)];
+  return { indices, palette };
 }
 
 function lzw(indices: Uint8Array): Uint8Array {
@@ -73,7 +132,8 @@ function lzw(indices: Uint8Array): Uint8Array {
   return Uint8Array.from(out);
 }
 
-export function encodeGif(frames: Uint8Array[], width: number, height: number, delayMs: number): Blob {
+/** Encode frames as a looping GIF; a frame carrying its own palette is written with a local colour table. */
+export function encodeGif(frames: GifFrame[], width: number, height: number, delayMs: number): Blob {
   const parts: (Uint8Array | number[])[] = [];
   const u16 = (v: number) => [v & 255, (v >> 8) & 255];
   parts.push([0x47, 0x49, 0x46, 0x38, 0x39, 0x61], [...u16(width), ...u16(height), 0xf7, 0, 0], palette());
@@ -81,9 +141,11 @@ export function encodeGif(frames: Uint8Array[], width: number, height: number, d
   const delay = Math.max(2, Math.round(delayMs / 10));
   for (const f of frames) {
     parts.push([0x21, 0xf9, 4, 0, ...u16(delay), 0, 0]);
-    parts.push([0x2c, 0, 0, 0, 0, ...u16(width), ...u16(height), 0]);
+    const local = f instanceof Uint8Array ? null : f.palette;
+    parts.push([0x2c, 0, 0, 0, 0, ...u16(width), ...u16(height), local ? 0x87 : 0]);
+    if (local) parts.push(local);
     parts.push([8]);
-    const data = lzw(f);
+    const data = lzw(f instanceof Uint8Array ? f : f.indices);
     for (let i = 0; i < data.length; i += 255) {
       const chunk = data.subarray(i, i + 255);
       parts.push([chunk.length], chunk);

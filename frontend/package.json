@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && mkdir -p dist/explore && cp dist/explore.html dist/explore/index.html",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:fc": "node tests/false-colour.mjs"
   },
   "dependencies": {
     "@types/three": "^0.187.0",

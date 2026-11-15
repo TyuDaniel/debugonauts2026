@@ -1,5 +1,6 @@
 // SkyDive viewer — wavelength bar: two handles over an exposure histogram, detector chips,
 // molecule presets, live count, matched-wavelengths toggle. Written with AI coding assistance (Claude Code).
+import { colourBands } from './compute';
 import { $, clear, fmt, h, rafThrottle } from './dom';
 import { store, groupPatch, type ViewState } from './store';
 import { DETECTORS, FEATURES, WL_MAX, WL_MIN } from './types';
@@ -26,6 +27,14 @@ export function setDetector(n: number): void {
   if (d) setRange(d.lo, d.hi);
 }
 
+/** False colour on or off: the selected range as blue, green and red. */
+export function toggleColour(): void {
+  store.set({ fc: !store.state.fc });
+}
+
+/** Bar colours of the three parts, red first, matching `colourBands`. */
+const PART_FILL = ['rgba(255,104,84,0.8)', 'rgba(96,222,120,0.75)', 'rgba(96,160,255,0.85)'];
+
 export function stackAllSpherex(): void {
   const visits = store.session.frames.filter((f) => f.kind === 'spherex').map((f) => f.id);
   if (visits.length) store.set(groupPatch({ A: visits }, ['A', null]));
@@ -37,6 +46,8 @@ export function initWavebar(): void {
   sel = $('#wave-sel');
   lo = $('#wave-lo');
   hi = $('#wave-hi');
+
+  $('#fc-toggle').addEventListener('click', toggleColour);
 
   const dets = $('#det-chips');
   for (const d of DETECTORS) {
@@ -138,7 +149,7 @@ export function initWavebar(): void {
 
   new ResizeObserver(drawHist).observe(track);
   store.on('state', (k) => {
-    if (k.has('wl') || k.has('matched') || k.has('mode')) render();
+    if (k.has('wl') || k.has('matched') || k.has('mode') || k.has('fc')) render();
   });
   store.on(['stacks', 'progress', 'session'], render);
   render();
@@ -172,6 +183,19 @@ const render = rafThrottle((): void => {
     c.setAttribute('aria-pressed', String(on));
   }
 
+  // False colour: the selection shows its three parts, and a line under the bar names them.
+  $('#fc-toggle').setAttribute('aria-pressed', String(st.fc));
+  track.classList.toggle('fc', st.fc);
+  const legend = $('#fc-legend');
+  legend.hidden = !st.fc;
+  if (st.fc) {
+    clear(legend);
+    const bands = colourBands();
+    for (const c of [2, 1, 0]) {
+      legend.append(h('span', { class: `fc-key fc-${'rgb'[c]}` }, h('i', { 'aria-hidden': 'true' }), `${['Red', 'Green', 'Blue'][c]} ${bands[c][0].toFixed(2)}–${bands[c][1].toFixed(2)} µm`));
+    }
+  }
+
   const count = $('#wave-count');
   clear(count);
   if (s.usableCount || s.status === 'ok') {
@@ -180,6 +204,8 @@ const render = rafThrottle((): void => {
 
   const notes: string[] = [];
   if (preset) notes.push('Narrow preset: only 1–3 exposures per visit, so all visits are stacked together. Bright sources only.');
+  if (st.fc && st.mode === 'diff') notes.push('False colour does not apply to a difference.');
+  else if (st.fc && b - a < 0.3) notes.push('This range is narrow for false colour: each colour gets very few exposures.');
   if (s.matchNote) notes.push(s.matchNote + '.');
   const note = $('#wave-note');
   note.hidden = !notes.length;
@@ -203,6 +229,7 @@ function drawHist(): void {
   const axisH = 14 * d;
   const plotH = H - axisH;
   const [a, b] = store.state.wl;
+  const fc = store.state.fc;
   const ex = new Set(store.state.excluded);
 
   // Histogram of where the exposures fall.
@@ -221,7 +248,9 @@ function drawHist(): void {
     const inside = um >= a && um <= b;
     if (!bins[i]) continue;
     const hgt = Math.max(1.5 * d, (bins[i] / max) * (plotH - 5 * d));
-    g.fillStyle = inside ? 'rgba(200,245,58,0.6)' : 'rgba(139,146,128,0.4)';
+    // False colour: a selected bar takes the colour its exposures are drawn in.
+    const part = 2 - Math.min(2, Math.max(0, Math.floor((3 * (um - a)) / (b - a || 1))));
+    g.fillStyle = !inside ? 'rgba(139,146,128,0.4)' : fc ? PART_FILL[part] : 'rgba(200,245,58,0.6)';
     g.fillRect(i * bw + 0.5 * d, plotH - hgt, Math.max(1, bw - d), hgt);
   }
   // Baseline, detector boundaries and labels.
