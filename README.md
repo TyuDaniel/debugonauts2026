@@ -185,7 +185,7 @@ Open it from the mission patch on the landing page or by going to `/explore`. It
 - **Star colour** colours stars by temperature, from hot and blue to cool and red. **Motion** colours them by how far they move across our sky in a decade; bright stars are the fast movers, the best places to look for motion in the viewer.
 - Brown dwarfs are drawn as rings. Dashed markers point towards prepared targets that lie beyond the map.
 - The time slider at the bottom moves every star along its real motion up to 50,000 years into the past or the future. Press play to animate it, or drag the slider back to the middle to return to today.
-- Search for a star by name in the box at the top, or click any star to open its card with distance, motion and position. **Dive** flies back to the Sun, turns to face the star and opens the viewer at its position today.
+- Search for a star by name in the box at the top, or click any star to open its card with distance, motion and position. **Dive** flies back to the Sun, turns to face the star and opens the viewer at its position today. The five prepared fields on the landing page play the same dive in the map beside them before the viewer opens.
 
 
 ## Run it locally

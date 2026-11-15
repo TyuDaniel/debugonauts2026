@@ -510,14 +510,13 @@ async function start(): Promise<void> {
 
   // ---- dive ----------------------------------------------------------------------------------
   const fade = $('fade');
-  function startDive(sel: Selection): void {
+  function startDive(sel: Selection, url = diveUrl(sel)): void {
     if (diving) return;
     diving = true;
     setPlaying(false);
     stopAutoRotate();
     controls.enabled = false;
     document.body.classList.add('diving');
-    const url = diveUrl(sel);
     // Ask the backend for the exposure list now, so it is cached by the time the viewer opens.
     const q = new URL(url, location.href).searchParams;
     if (!baked.some((f) => f.ra === +q.get('ra')! && f.dec === +q.get('dec')!)) {
@@ -548,6 +547,28 @@ async function start(): Promise<void> {
       exposureOverride = Math.exp(THREE.MathUtils.lerp(Math.log(fromExp), Math.log(45), e));
     }, leave);
   }
+
+  // A showcase tile on the landing page plays its dive here before the viewer opens. The tile
+  // is matched by name, or failing that by where it is in the sky. Returns false if the map
+  // cannot play it, and the tile then opens the viewer itself.
+  function diveFromLanding(t: { name: string; ra: number; dec: number; url: string }): boolean {
+    if (diving) return false;
+    const key = normaliseName(t.name);
+    let sel = searchItems.find((it) => it.key === key)?.sel ?? null;
+    if (!sel) {
+      let best = 120; // arcseconds
+      for (const it of searchItems) {
+        const p = presentDay(it.sel);
+        const sep = angularSepArcsec(t.ra, t.dec, p.ra, p.dec);
+        if (sep < best) { best = sep; sel = it.sel; }
+      }
+    }
+    if (!sel) return false;
+    select(sel, false);
+    startDive(sel, t.url);
+    return true;
+  }
+  (window as unknown as Record<string, unknown>).skydiveDive = diveFromLanding;
 
   // Coming back with the browser's back button restores a usable map.
   window.addEventListener('pageshow', (ev) => {

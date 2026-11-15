@@ -740,7 +740,8 @@ select option:disabled {
   border-radius: 50%;
   transition: transform 0.3s var(--ease);
 }
-.tile:focus-visible {
+.tile:focus-visible,
+.tile.going {
   background: var(--accent-ink);
   color: var(--accent);
   outline: none;
@@ -752,7 +753,8 @@ select option:disabled {
     outline: none;
   }
 }
-.tile:focus-visible .tile-go {
+.tile:focus-visible .tile-go,
+.tile.going .tile-go {
   transform: translateX(4px) rotate(-45deg);
 }
 @media (hover: hover) {
